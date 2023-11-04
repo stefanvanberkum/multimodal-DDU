@@ -129,14 +129,15 @@ class DDU_CWKD:
 
 
 class DDU_VI:
-    def __init__(self, z, n_components):
+    def __init__(self, z, n_components, scaling_parameter=None):
         """Deep deterministic uncertainty predictor with a Dirichlet process mixture.
 
         :param z: A feature matrix z of shape (n_obs, n_feat).
         :param n_components: The maximum number of components.
+        :param scaling_parameter: The weight concentration prior.
         """
 
-        self.gmm = BayesianGaussianMixture(n_components=n_components).fit(z)
+        self.gmm = BayesianGaussianMixture(n_components=n_components, weight_concentration_prior=scaling_parameter).fit(z)
 
     def predict(self, z, p):
         """Predict uncertainty for one sample.
