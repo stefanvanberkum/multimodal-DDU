@@ -9,18 +9,17 @@ from tensorflow.keras.activations import relu
 from tensorflow.keras.layers import Add, BatchNormalization, Conv2D, Dense, Dropout, GlobalAveragePooling2D, AveragePooling2D, SpectralNormalization
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.regularizers import l2
-import tensorflow_addons as tfa
 from scipy.special import softmax, logsumexp
 from scipy.stats import entropy
 
 
-class spectral_norm(tf.keras.layers.Wrapper):
-    def __init__(self, layer):
-        super(spectral_norm, self).__init__(layer)
-        self.layer = tfa.layers.SpectralNormalization(layer)
-    @tf.function
-    def call(self, inputs,training=None):
-        return self.layer(inputs)
+# class spectral_norm(tf.keras.layers.Wrapper):
+#     def __init__(self, layer):
+#         super(spectral_norm, self).__init__(layer)
+#         self.layer = tfa.layers.SpectralNormalization(layer)
+#     @tf.function
+#     def call(self, inputs,training=None):
+#         return self.layer(inputs)
         
     
 
@@ -133,8 +132,8 @@ def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True
         x = Conv2D(n_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
                kernel_regularizer=l2(weight_decay))(x)
     
-    print("Shape x: ", tf.shape(x))
-    print("N filters: ", n_filters)
+    # print("Shape x: ", tf.shape(x))
+    # print("N filters: ", n_filters)
     
 
     if downsample:
@@ -154,7 +153,7 @@ def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True
             #     x_skip = tf.concat([x_skip, zero_entries], axis=-1)
 
             if(x_skip.shape[1] % 2 == 0):
-                print("Downsample")
+                # print("Downsample")
                 x_skip = AveragePooling2D(pool_size =  2, strides=2)(x_skip)
             else:
                 #just 1x1 average pooling in that case, could be replaced with usual 1x1-convolutions
@@ -165,9 +164,9 @@ def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True
                 # concatenate in dimension of channels
                 missing = n_filters-x_skip.shape[3]
                 x_skip = tf.pad(x_skip, [[0,0], [0,0], [0,0], [missing //2, -(missing // -2)]])
-                print("Shape x_skip: ", tf.shape(x_skip))
+                # print("Shape x_skip: ", tf.shape(x_skip))
     elif(n_filters > x_skip.shape[-1]):
-        print("INcrease depth")
+        # print("INcrease depth")
         missing = n_filters-x_skip.shape[3]
         x_skip = tf.pad(x_skip, [[0,0], [0,0], [0,0], [missing //2, -(missing // -2)]])
 
