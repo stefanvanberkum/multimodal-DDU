@@ -18,6 +18,7 @@ parser.add_argument("--modBlock", default=True, type=bool)
 parser.add_argument("--ablate", default=False, type=bool)
 parser.add_argument("--n_epochs", default=350, type=int)
 parser.add_argument("--batch_size", default=128, type=int)
+parser.add_argument("--n_run",required=True, type=int)
 
 
 # # parameters for training
@@ -39,6 +40,7 @@ if(__name__=="__main__"):
     n_members = 5
     batch_size = args.batch_size
     n_epochs = args.n_epochs
+    n_run = args.n_run
 
     # load training data
     if(dataset == 'cifar10'):
@@ -108,14 +110,14 @@ if(__name__=="__main__"):
     # checkpoints to save weights of the model
     if(train_modBlock):
         if(train_ablate):
-            ckpt_path = 'trained_models/training_'+train_model+"_"+"SN"+"_"+dataset+"_ablation"+"/cp.ckpt"
+            ckpt_path = 'trained_models/training_'+train_model+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/cp.ckpt"
         else: 
-            ckpt_path = 'trained_models/training_'+train_model+"_"+"SN"+"_"+dataset+"/cp.ckpt"
+            ckpt_path = 'trained_models/training_'+train_model+"_"+"SN"+"_"+dataset+"_n_run_"+str(n_run)+"/cp.ckpt"
     else:
         if(train_ablate):
-            ckpt_path = 'trained_models/training_'+train_model+"_"+dataset+"_ablation"+"/cp.ckpt"
+            ckpt_path = 'trained_models/training_'+train_model+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/cp.ckpt"
         else: 
-            ckpt_path = 'trained_models/training_'+train_model+"_"+dataset+"/cp.ckpt"
+            ckpt_path = 'trained_models/training_'+train_model+"_"+dataset+"_n_run_"+str(n_run)+"/cp.ckpt"
 
     
     ckpt_callback =  tf.keras.callbacks.ModelCheckpoint(
