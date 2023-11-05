@@ -2,7 +2,7 @@
 
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from resNet import resnet
+from resNet import resnet, resnet_uncertainty
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -47,11 +47,17 @@ if __name__ == '__main__':
     plt.show()
 
     # test model on single image - expand batch dim first
-    image = tf.expand_dims(image, axis=0)
-    out = resNet18(image)
-    print("Output: ", out)
 
-    resNet18.summary()
+    image = np.concatenate((np.expand_dims(trainX[0],axis=0), np.expand_dims(trainX[1], axis=0)), axis=0)
+    # image = tf.expand_dims(image, axis=0)
+    out = resNet18(image)
+    out = out.numpy()
+    print("Output: ", out)
+    print("Out shape: ", np.shape(out))
+    aleatoric, epistemic = resnet_uncertainty(out, mode='energy')
+    print("Aleatoric: ", aleatoric)
+    print("Epistemic: ", epistemic)
+
 
     resNet18.fit(x=trainX, y=trainY,batch_size=128,epochs=10,validation_data=(testX, testY))
     

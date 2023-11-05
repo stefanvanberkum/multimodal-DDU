@@ -10,6 +10,8 @@ from tensorflow.keras.layers import Add, BatchNormalization, Conv2D, Dense, Drop
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.regularizers import l2
 import tensorflow_addons as tfa
+from scipy.special import softmax, logsumexp
+from scipy.stats import entropy
 
 
 class spectral_norm(tf.keras.layers.Wrapper):
@@ -24,7 +26,7 @@ class spectral_norm(tf.keras.layers.Wrapper):
 
 
 
-def WRN(N, k, in_shape, n_out, dropout=0, weight_decay=1e-4, modBlock=True):
+def WRN(N, k, in_shape, n_out, dropout=0, weight_decay=1e-4, modBlock=True, ablate=False):
     """WRN-n-k as described by Zagoruyko and Komodakis (2017).
 
     This network has n=7N layers (2N for each of the three stages with an additional convolution at the start and at
@@ -39,6 +41,8 @@ def WRN(N, k, in_shape, n_out, dropout=0, weight_decay=1e-4, modBlock=True):
     :param n_out: Output size.
     :param dropout: Dropout rate.
     :param weight_decay: Weight decay parameter.
+    :param modBlock: variable deciding if modified blocks are used (Leaky-ReLU, modified skip-connections etc.)
+    :param ablate: variable deciding if ablation study, if true normal skip-connections are used with other modifications
     """
 
     stages = [16 * k, 32 * k, 64 * k]
@@ -58,33 +62,33 @@ def WRN(N, k, in_shape, n_out, dropout=0, weight_decay=1e-4, modBlock=True):
         n_filters = stages[i]
         for j in range(N):
             if i > 0 and j == 0:
-                x = block(x, n_filters, dropout, weight_decay, downsample=True, modBlock=modBlock)
+                x = block(x, n_filters, dropout, weight_decay, downsample=True, modBlock=modBlock, ablate=ablate)
             else:
-                x = block(x, n_filters, dropout, weight_decay, modBlock=modBlock)
+                x = block(x, n_filters, dropout, weight_decay, modBlock=modBlock, ablate=ablate)
 
     # Pooling and dense output layer with softmax activation.
     x = BatchNormalization()(x)
     x = relu(x)
     x = GlobalAveragePooling2D()(x)
-    outputs = Dense(n_out, activation='softmax', kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay))(x)
+    outputs = Dense(n_out, activation='linear', kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay))(x)
 
     model = Model(inputs=inputs, outputs=outputs)
 
     # TODO: This seems to depend on the model -> move out of WRN and into main.
     # Compile model.
     opt = tf.keras.optimizers.SGD(learning_rate=0.1, momentum=0.9)
-    loss = tf.keras.losses.SparseCategoricalCrossentropy()
+    loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     metric = tf.keras.metrics.Accuracy()
     if(modBlock):
         runEagerly = True
     else: 
         runEagerly=False
-    model.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=['accuracy'], run_eagerly=runEagerly)
+    model.compile(optimizer=opt, loss=loss, metrics=['accuracy'], run_eagerly=runEagerly)
     return model
 
 
 
-def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True):
+def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True, ablate=False):
     """Basic ResNet block.
 
     :param x: Input.
@@ -134,7 +138,7 @@ def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True
     
 
     if downsample:
-        if(not modBlock):
+        if(not modBlock or ablate):
             x_skip = Conv2D(n_filters, 1, 2, use_bias=False, kernel_initializer='he_normal',
                         kernel_regularizer=l2(weight_decay))(x_skip)
         else: 
@@ -170,5 +174,26 @@ def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True
     x = Add()([x_skip, x])
 
     return x
+
+
+def wrn_uncertainty(y, mode='softmax'):
+    """Calculates simple uncertainty measures for single (deterministic) wide-resnet
+    :param y: output-logits of shape (n_obs, n_classes)
+    :param mode: mode for uncertainty ('softmax' or 'energy')
+    """
+    probs = softmax(y, axis=-1)
+    if(mode=='softmax'):
+        # use softmax entropy as uncertainty
+        aleatoric = entropy(probs, axis=-1)
+        epistemic = aleatoric
+    elif(mode=='energy'):
+        # aleatoric: softmax entropy, epistemic: unnormalized softmax density (logsumexp of logits)
+        aleatoric = entropy(probs, axis=-1)
+        epistemic = logsumexp(y, axis=-1)
+    else:
+        aleatoric = 0
+        epistemic = 0
+    
+    return aleatoric, epistemic
 
 
