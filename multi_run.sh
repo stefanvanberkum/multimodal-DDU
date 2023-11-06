@@ -3,20 +3,20 @@
 # Five runs on CIFAR-10 and CIFAR-100 for one model.
 
 # WRN models:
-# - WRN softmax: model_type=wrn, modblock=False, ablate=False
-# - WRN DDU: model_type=wrn, modblock=True, ablate=False
-# - WRN ensemble: model_type=wrn-ensemble, modblock=False, ablate=False
-# - WRN DDU ablation: model_type=wrn, modblock=True, ablate=True
+# - WRN softmax: model_type=wrn, modblock=0, ablate=0
+# - WRN DDU: model_type=wrn, modblock=1, ablate=0
+# - WRN ensemble: model_type=wrn-ensemble, modblock=0, ablate=0
+# - WRN DDU ablation: model_type=wrn, modblock=1, ablate=1
 
 # ResNet models:
-# - ResNet softmax: model_type=resnet, modblock=False, ablate=False
-# - ResNet DDU: model_type=resnet, modblock=True, ablate=False
-# - ResNet ensemble: model_type=resnet-ensemble, modblock=False, ablate=False
-# - ResNet DDU ablation: model_type=resnet, modblock=True, ablate=True
+# - ResNet softmax: model_type=resnet, modblock=0, ablate=0
+# - ResNet DDU: model_type=resnet, modblock=1, ablate=0
+# - ResNet ensemble: model_type=resnet-ensemble, modblock=0, ablate=0
+# - ResNet DDU ablation: model_type=resnet, modblock=1, ablate=1
 
 model_type=wrn
-modblock=True
-ablate=False
+modblock=1
+ablate=0
 
 for run in {1..5}
 do
