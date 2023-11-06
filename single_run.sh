@@ -3,49 +3,49 @@
 # A single run for all WRN models.
 
 # WRN models:
-# - WRN softmax: model_type=wrn, modblock=0, ablate=0
-# - WRN DDU: model_type=wrn, modblock=1, ablate=0
-# - WRN ensemble: model_type=wrn-ensemble, modblock=0, ablate=0
-# - WRN DDU ablation: model_type=wrn, modblock=1, ablate=1
+# - WRN softmax: model_type=wrn, modBlock=False, ablate=False
+# - WRN DDU: model_type=wrn, modBlock=True, ablate=False
+# - WRN ensemble: model_type=wrn-ensemble, modBlock=False, ablate=False
+# - WRN DDU ablation: model_type=wrn, modBlock=True, ablate=True
 
 # ResNet models:
-# - ResNet softmax: model_type=resnet, modblock=0, ablate=0
-# - ResNet DDU: model_type=resnet, modblock=1, ablate=0
-# - ResNet ensemble: model_type=resnet-ensemble, modblock=0, ablate=0
-# - ResNet DDU ablation: model_type=resnet, modblock=1, ablate=1
+# - ResNet softmax: model_type=resnet, modBlock=False, ablate=False
+# - ResNet DDU: model_type=resnet, modBlock=True, ablate=False
+# - ResNet ensemble: model_type=resnet-ensemble, modBlock=False, ablate=False
+# - ResNet DDU ablation: model_type=resnet, modBlock=True, ablate=True
 
 run=1
 dataset=cifar10
 
 # WRN softmax.
 model_type=wrn
-modblock=0
-ablate=0
+modBlock=False
+ablate=False
 
-python train_models.py --model $model_type --dataset $dataset --modblock $modblock --ablate $ablate --n_run $run
+python train_models.py --model $model_type --dataset $dataset --modBlock $modBlock --ablate $ablate --n_run $run
 wait
 
 # WRN DDU.
 model_type=wrn
-modblock=1
-ablate=0
+modBlock=True
+ablate=False
 
-python train_models.py --model $model_type --dataset $dataset --modblock $modblock --ablate $ablate --n_run $run
+python train_models.py --model $model_type --dataset $dataset --modBlock $modBlock --ablate $ablate --n_run $run
 wait
 
 # WRN ensemble.
 model_type=wrn-ensemble
-modblock=0
-ablate=0
+modBlock=False
+ablate=False
 
-python train_models.py --model $model_type --dataset $dataset --modblock $modblock --ablate $ablate --n_run $run
+python train_models.py --model $model_type --dataset $dataset --modBlock $modBlock --ablate $ablate --n_run $run
 wait
 
 # WRN DDU ablation.
 model_type=wrn
-modblock=1
-ablate=1
+modBlock=True
+ablate=True
 
-python train_models.py --model $model_type --dataset $dataset --modblock $modblock --ablate $ablate --n_run $run
+python train_models.py --model $model_type --dataset $dataset --modBlock $modBlock --ablate $ablate --n_run $run
 wait
 
