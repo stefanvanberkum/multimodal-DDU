@@ -164,7 +164,5 @@ def softmax_uncertainty(p):
 
     aleatoric = entropy(p, axis=1)
     epistemic = aleatoric
+    
     return aleatoric, epistemic
-
-
-
