@@ -26,7 +26,8 @@ def ensemble_resnet(n_members, stages, N, in_filters, in_shape, n_out, dropout=0
     ensemble = []
 
     for i in range(n_members):
-        ensemble.append(resnet(stages, N, in_filters, in_shape, n_out, dropout, weight_decay, modBlock, use_bottleneck, ablate))
+        member,_ = resnet(stages, N, in_filters, in_shape, n_out, dropout, weight_decay, modBlock, use_bottleneck, ablate)
+        ensemble.append(member)
 
     return ensemble
     
@@ -49,7 +50,8 @@ def ensemble_wrn(n_members, N, k, in_shape, n_out, dropout=0, weight_decay=1e-4,
     """
     ensemble = []
     for i in range(n_members):
-        ensemble.append(WRN(N, k, in_shape, n_out, dropout, weight_decay, modBlock, ablate))
+        member,_ = WRN(N, k, in_shape, n_out, dropout, weight_decay, modBlock, ablate)
+        ensemble.append(member)
     return ensemble
 
 

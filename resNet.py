@@ -50,6 +50,7 @@ def resnet(stages, N, in_filters, in_shape, n_out, dropout=0, weight_decay=1e-4,
     :param ablate: variable deciding if ablation study, if true normal skip-connections are used with other modifications
     """
     
+
     inputs = Input(shape=in_shape)
 
 
@@ -79,10 +80,11 @@ def resnet(stages, N, in_filters, in_shape, n_out, dropout=0, weight_decay=1e-4,
     # Pooling and dense output layer with softmax activation.
     x = BatchNormalization()(x)
     x = relu(x)
-    x = GlobalAveragePooling2D()(x)
-    outputs = Dense(n_out, activation='linear', kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay))(x)
+    x_pool = GlobalAveragePooling2D()(x)
+    outputs = Dense(n_out, activation='linear', kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay))(x_pool)
 
     model = Model(inputs=inputs, outputs=outputs)
+    encoder = Model(inputs, x_pool)
 
     # TODO: This seems to depend on the model -> move out of WRN and into main.
     # Compile model.
@@ -94,7 +96,8 @@ def resnet(stages, N, in_filters, in_shape, n_out, dropout=0, weight_decay=1e-4,
     else: 
         runEagerly=False
     model.compile(optimizer=opt, loss=loss, metrics=['accuracy'], run_eagerly=runEagerly)
-    return model
+
+    return model, encoder
 
 
 
