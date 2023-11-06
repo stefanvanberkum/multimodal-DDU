@@ -14,9 +14,9 @@
 # - ResNet ensemble: model_type=resnet-ensemble, modblock=False, ablate=False
 # - ResNet DDU ablation: model_type=resnet, modblock=True, ablate=True
 
-model_type = wrn
-modblock = True
-ablate = False
+model_type=wrn
+modblock=True
+ablate=False
 
 for run in {1..5}
 do

@@ -14,37 +14,37 @@
 # - ResNet ensemble: model_type=resnet-ensemble, modblock=False, ablate=False
 # - ResNet DDU ablation: model_type=resnet, modblock=True, ablate=True
 
-run = 1
-dataset = cifar10
+run=1
+dataset=cifar10
 
 # WRN softmax.
-model_type = wrn
-modblock = False
-ablate = False
+model_type=wrn
+modblock=False
+ablate=False
 
 python train_models.py --model $model_type --dataset $dataset --modblock $modblock --ablate $ablate --n_run $run
 wait
 
 # WRN DDU.
-model_type = wrn
-modblock = True
-ablate = False
+model_type=wrn
+modblock=True
+ablate=False
 
 python train_models.py --model $model_type --dataset $dataset --modblock $modblock --ablate $ablate --n_run $run
 wait
 
 # WRN ensemble.
-model_type = wrn-ensemble
-modblock = False
-ablate = False
+model_type=wrn-ensemble
+modblock=False
+ablate=False
 
 python train_models.py --model $model_type --dataset $dataset --modblock $modblock --ablate $ablate --n_run $run
 wait
 
 # WRN DDU ablation.
-model_type = wrn
-modblock = True
-ablate = True
+model_type=wrn
+modblock=True
+ablate=True
 
 python train_models.py --model $model_type --dataset $dataset --modblock $modblock --ablate $ablate --n_run $run
 wait
