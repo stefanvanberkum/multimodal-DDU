@@ -3,26 +3,26 @@
 # Five runs on CIFAR-10 and CIFAR-100 for one model.
 
 # WRN models:
-# - WRN softmax: MODEL_TYPE=wrn, MODBLOCK=False, ABLATE=False
-# - WRN DDU: MODEL_TYPE=wrn, MODBLOCK=True, ABLATE=False
-# - WRN ensemble: MODEL_TYPE=wrn-ensemble, MODBLOCK=False, ABLATE=False
-# - WRN DDU ablation: MODEL_TYPE=wrn, MODBLOCK=True, ABLATE=True
+# - WRN softmax: model_type=wrn, modblock=False, ablate=False
+# - WRN DDU: model_type=wrn, modblock=True, ablate=False
+# - WRN ensemble: model_type=wrn-ensemble, modblock=False, ablate=False
+# - WRN DDU ablation: model_type=wrn, modblock=True, ablate=True
 
 # ResNet models:
-# - ResNet softmax: MODEL_TYPE=resnet, MODBLOCK=False, ABLATE=False
-# - ResNet DDU: MODEL_TYPE=resnet, MODBLOCK=True, ABLATE=False
-# - ResNet ensemble: MODEL_TYPE=resnet-ensemble, MODBLOCK=False, ABLATE=False
-# - ResNet DDU ablation: MODEL_TYPE=resnet, MODBLOCK=True, ABLATE=True
+# - ResNet softmax: model_type=resnet, modblock=False, ablate=False
+# - ResNet DDU: model_type=resnet, modblock=True, ablate=False
+# - ResNet ensemble: model_type=resnet-ensemble, modblock=False, ablate=False
+# - ResNet DDU ablation: model_type=resnet, modblock=True, ablate=True
 
-MODEL_TYPE = wrn
-MODBLOCK = True
-ABLATE = False
+model_type = wrn
+modblock = True
+ablate = False
 
-for RUN in {1..5}
+for run in {1..5}
 do
-	for DATASET in cifar10 cifar100
+	for dataset in cifar10 cifar100
 	do
-		python train_models.py --model $MODEL_TYPE --dataset $DATASET --modblock $MODBLOCK --ablate $ABLATE --n_run $RUN
+		python train_models.py --model $model_type --dataset $dataset --modblock $modblock --ablate $ablate --n_run $run
 		wait
 	done
 done
