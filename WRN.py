@@ -98,7 +98,7 @@ def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True
     """
 
     if(modBlock): 
-        activation = tf.keras.layers.LeakyReLU()
+        activation = tf.keras.layers.LeakyReLU(alpha = 0.01)
     else: 
         activation = tf.keras.layers.ReLU()
 

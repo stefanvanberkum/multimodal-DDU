@@ -75,33 +75,46 @@ if(__name__ == "__main__"):
         # initialize model
         if(test_model == "resnet"):
             # Resnet 18 - modify stages for other architecture
-            model = resnet(stages=[64,128,256,512],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes, modBlock = train_modBlock, ablate = train_ablate)
+            model, encoder = resnet(stages=[64,128,256,512],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes, modBlock = train_modBlock, ablate = train_ablate)
         elif(test_model == "wrn"):
             # Wide-Resnet 28-10 - modify for different architecture
-            model = WRN(N=4, in_shape=(32,32,3), k=10, n_out=n_classes, modBlock=train_modBlock, ablate = train_ablate) 
+            model, encoder = WRN(N=4, in_shape=(32,32,3), k=10, n_out=n_classes, modBlock=train_modBlock, ablate = train_ablate) 
         elif(test_model == "wrn-ensemble"):
-            model = ensemble_wrn(n_members, N=4, in_shape=(32,32,3), k=10, n_out=n_classes, modBlock=train_modBlock, ablate = train_ablate)
+            model, encoder = ensemble_wrn(n_members, N=4, in_shape=(32,32,3), k=10, n_out=n_classes, modBlock=train_modBlock, ablate = train_ablate)
         elif(test_model == "resnet-ensemble"):
-            model = ensemble_resnet(n_members, stages=[64,128],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes, modBlock = train_modBlock, ablate=train_ablate)
+            model, encoder = ensemble_resnet(n_members, stages=[64,128],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes, modBlock = train_modBlock, ablate=train_ablate)
         
         if(train_modBlock):
             if(train_ablate):
-                ckpt_path = 'trained_models/training_'+test_model+"_"+"SN"+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
+                model_path = 'trained_models/full_models/training_'+test_model+"_"+"SN"+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
             else: 
-                ckpt_path = 'trained_models/training_'+test_model+"_"+"SN"+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
+                model_path = 'trained_models/full_models/training_'+test_model+"_"+"SN"+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
         else:
             if(train_ablate):
-                ckpt_path = 'trained_models/training_'+test_model+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
+                model_path = 'trained_models/full_models/training_'+test_model+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
             else: 
-                ckpt_path = 'trained_models/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
+                model_path = 'trained_models/full_models/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
+        
+
+        if(train_modBlock):
+            if(train_ablate):
+                encoder_path = 'trained_models/encoders/training_'+test_model+"_"+"SN"+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
+            else: 
+                encoder_path = 'trained_models/encoders/training_'+test_model+"_"+"SN"+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
+        else:
+            if(train_ablate):
+                encoder_path = 'trained_models/encoders/training_'+test_model+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
+            else: 
+                encoder_path = 'trained_models/encoders/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
 
         if(test == "accuracy"):
             # load weights from i-th training run
             # checkpoints to save weights of the model
-            model.load_weights(ckpt_path).expect_partial()
+            model.load_weights(model_path).expect_partial()
 
             # evaluate accuracy on test_ds
-            score.append(model.evaluate(testX, testY, batch_size=batch_size))
+            _, acc = model.evaluate(testX, testY, batch_size=batch_size)
+            score.append(acc)
 
         
         elif(test == "ece"):
@@ -110,7 +123,7 @@ if(__name__ == "__main__"):
         elif(test=="ood"):
             # run ood expirments on test set
             pass
-    print("Mean score: ", np.mean(score))
+    print("Mean score %s:  %f" %(test,np.mean(score)))
     
 
 
