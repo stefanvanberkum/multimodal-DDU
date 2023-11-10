@@ -12,10 +12,12 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 import numpy as np 
 import argparse
+import tensorflow_probability as tfp
 from WRN import WRN, wrn_uncertainty
 from resNet import resnet, resnet_uncertainty
 from ensembles import ensemble_resnet, ensemble_wrn, ensemble_uncertainty
 from uncertainty import DDU, DDU_KD, DDU_CWKD, DDU_VI
+from sklearn.metrics import roc_auc_score
 
 # parameters for testing
 parser = argparse.ArgumentParser()
@@ -28,6 +30,7 @@ parser.add_argument("--ablate", default=False, type=bool)
 parser.add_argument("--batch_size", default=128, type=int)
 parser.add_argument("--test", default = "accuracy", type=str) # 'accuracy', 'ece', 'ood'
 parser.add_argument("--n_runs", default = 10, type=int) # number of training runs to average over
+parser.add_argument("--uncertainty", default='DDU', type=str) # 'DDU', 'energy', 'softmax'
 
 
 # load pre-trained models
@@ -42,12 +45,28 @@ if(__name__ == "__main__"):
     batch_size = args.batch_size
     test = args.test
     n_runs = args.n_runs
+    uncertainty = args.uncertainty
 
     if(train_ds == 'cifar10'):
         n_classes = 10
+        ds_train = tfds.load("cifar10", split='train')
+        trainX = np.zeros((50000, 32, 32,3), dtype=np.float32)
+        trainY = np.zeros((50000,), dtype=np.int32)
+
+        for i, elem in enumerate(ds_train):
+            # print(elem)
+            trainX[i, :, :, :] = tf.cast(elem['image'], tf.float32)/255.
+            trainY[i] = elem['label']
+
     elif(train_ds == 'cifar100'):
         n_classes = 100
-
+        ds_train = tfds.load('cifar100', split='train')
+        trainX = np.zeros((50000, 32, 32,3), dtype=np.float32)
+        trainY = np.zeros((50000,), dtype=np.int32)
+        for i, elem in enumerate(ds_train):
+            # print(elem)
+            trainX[i, :, :, :] = tf.cast(elem['image'], tf.float32)/255.
+            trainY[i] = elem['label']
 
     if(test_ds == 'cifar10'):
         ds_test = tfds.load("cifar10", split='test')
@@ -83,6 +102,8 @@ if(__name__ == "__main__"):
             model, encoder = ensemble_wrn(n_members, N=4, in_shape=(32,32,3), k=10, n_out=n_classes, modBlock=train_modBlock, ablate = train_ablate)
         elif(test_model == "resnet-ensemble"):
             model, encoder = ensemble_resnet(n_members, stages=[64,128],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes, modBlock = train_modBlock, ablate=train_ablate)
+        else: 
+            print("Wrong model name chosen!")
         
         if(train_modBlock):
             if(train_ablate):
@@ -95,7 +116,6 @@ if(__name__ == "__main__"):
             else: 
                 model_path = 'trained_models/full_models/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
         
-
         if(train_modBlock):
             if(train_ablate):
                 encoder_path = 'trained_models/encoders/training_'+test_model+"_"+"SN"+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
@@ -110,7 +130,7 @@ if(__name__ == "__main__"):
         if(test == "accuracy"):
             # load weights from i-th training run
             # checkpoints to save weights of the model
-            model.load_weights(model_path).expect_partial()
+            # model.load_weights(model_path).expect_partial()
 
             # evaluate accuracy on test_ds
             _, acc = model.evaluate(testX, testY, batch_size=batch_size)
@@ -119,10 +139,31 @@ if(__name__ == "__main__"):
         
         elif(test == "ece"):
             # caluclate expected calibration error on test set
-            pass
+            logits = model.predict(testX, batch_size=batch_size)
+            ece = tfp.stats.expected_calibration_error(num_bins = 10, logits=logits, labels_true=testY)
+            score.append(ece*100)
         elif(test=="ood"):
             # run ood expirments on test set
-            pass
+            if(test_model == 'resnet'):
+                if(uncertainty == 'softmax'):
+                    test_logits = model.predict(testX, batch_size=batch_size)
+                    aleatoric, epistemic = resnet_uncertainty(test_logits, mode=uncertainty)
+                    print(epistemic)
+                    score.append(epistemic)
+                elif(uncertainty == 'energy'):
+                    test_logits = model.predict(testX, batch_size=batch_size)
+                    aleatoric, epistemic = resnet_uncertainty(test_logits, mode=uncertainty)
+                    score.append(epistemic)
+                elif(uncertainty == 'DDU'):
+                    pass
+            elif(test_model == 'wrn'):
+                if(uncertainty == 'softmac'):
+                    pass
+                elif(uncertainty == 'energy'):
+                    pass
+                elif(uncertainty == 'DDU'):
+                    pass
+
     print("Mean score %s:  %f" %(test,np.mean(score)))
 
     
