@@ -22,7 +22,7 @@ if __name__ == '__main__':
     if(model=='resnet'):
         ensemble = ensembles.ensemble_resnet(n_members, stages=[64,128],N=2,in_filters=64, in_shape=(28,28,1), n_out = 10, modBlock = True, ablate=True)
     elif(model == 'wide-res-net'):
-        ensemble = ensembles.ensemble_wrn(n_members, N=4, in_shape=(28,28,1), k=10, n_out=10, modBlock=True)
+        ensemble = ensembles.ensemble_wrn(n_members, N=4, in_shape=(28,28,1), k=3, n_out=10, modBlock=True)
     else:
         ensemble = ensembles.ensemble_resnet(n_members, stages=[64,128,256,512],N=2,in_filters=64, in_shape=(28,28,1), n_out = 10, modBlock = True)
 

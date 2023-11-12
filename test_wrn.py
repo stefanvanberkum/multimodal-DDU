@@ -15,7 +15,7 @@ if __name__ == '__main__':
     ds_test = tfds.load('mnist', split='test')
 
     # test on ResNet18 architecture
-    wideResNet = WRN(N=4, in_shape=(28,28,1), k=10, n_out=10, modBlock=False) 
+    wideResNet = WRN(N=4, in_shape=(28,28,1), k=3, n_out=10, modBlock=False)
 
     loss_func = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     metric = tf.keras.metrics.SparseCategoricalAccuracy()

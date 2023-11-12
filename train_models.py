@@ -88,9 +88,11 @@ if(__name__=="__main__"):
         model, encoder = resnet(stages=[64,128,256,512],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes, modBlock = train_modBlock, ablate = train_ablate)
     elif(train_model == "wrn"):
         # Wide-Resnet 28-10 - modify for different architecture
-        model, encoder = WRN(N=4, in_shape=(32,32,3), k=10, n_out=n_classes, modBlock=train_modBlock, ablate = train_ablate) 
+        model, encoder = WRN(N=4, in_shape=(32,32,3), k=3, n_out=n_classes, modBlock=train_modBlock,
+                             ablate = train_ablate)
     elif(train_model == "wrn-ensemble"):
-        model = ensemble_wrn(n_members, N=4, in_shape=(32,32,3), k=10, n_out=n_classes, modBlock=train_modBlock, ablate = train_ablate)
+        model = ensemble_wrn(n_members, N=4, in_shape=(32,32,3), k=3, n_out=n_classes, modBlock=train_modBlock,
+                             ablate = train_ablate)
     elif(train_model == "resnet-ensemble"):
         model = ensemble_resnet(n_members, stages=[64,128],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes, modBlock = train_modBlock, ablate=train_ablate)
 
