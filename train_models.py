@@ -131,12 +131,12 @@ if(__name__=="__main__"):
     model.fit(x=trainX, y=trainY, epochs=n_epochs, batch_size = batch_size, callbacks=[lr_callback, ckpt_callback], shuffle=True)
     if(train_modBlock):
         if(train_ablate):
-            model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/checkpoint"
+            model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_ablation_n_run_"+str(n_run)+"/checkpoint"
         else: 
             model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_n_run_"+str(n_run)+"/checkpoint"
     else:
         if(train_ablate):
-            model_path = 'trained_models/full_models_afterTraing/training_'+train_model+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/checkpoint"
+            model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+dataset+"_ablation_n_run_"+str(n_run)+"/checkpoint"
         else: 
             model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+dataset+"_n_run_"+str(n_run)+"/checkpoint"
     model.save_weights(model_path)
