@@ -41,6 +41,7 @@ if(__name__=="__main__"):
     batch_size = args.batch_size
     n_epochs = args.n_epochs
     n_run = args.n_run
+    print("Ablate: ", train_ablate)
 
     # load training data
     if(dataset == 'cifar10'):
@@ -148,28 +149,27 @@ if(__name__=="__main__"):
         model.fit(x=trainX, y=trainY, epochs=n_epochs, batch_size = batch_size, callbacks=[lr_callback, ckpt_callback], shuffle=True)
         if(train_modBlock):
             if(train_ablate):
-                model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/checkpoint"
+                model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/cp.ckpt"
             else:
-                model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_n_run_"+str(n_run)+"/checkpoint"
+                model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_n_run_"+str(n_run)+"/cp.ckpt"
         else:
             if(train_ablate):
-                model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+dataset+("_ablation"
-                                                                                                          "")+"_n_run_"+str(n_run)+"/checkpoint"
+                model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/cp.ckpt"
             else:
-                model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+dataset+"_n_run_"+str(n_run)+"/checkpoint"
+                model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+dataset+"_n_run_"+str(n_run)+"/cp.ckpt"
         model.save_weights(model_path)
 
         # save encoder in different files
         if(train_modBlock):
             if(train_ablate):
-                encoder_path = 'trained_models/encoders/training_'+train_model+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/checkpoint"
+                encoder_path = 'trained_models/encoders/training_'+train_model+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/cp.ckpt"
             else:
-                encoder_path = 'trained_models/encoders/training_'+train_model+"_"+"SN"+"_"+dataset+"_n_run_"+str(n_run)+"/checkpoint"
+                encoder_path = 'trained_models/encoders/training_'+train_model+"_"+"SN"+"_"+dataset+"_n_run_"+str(n_run)+"/cp.ckpt"
         else:
             if(train_ablate):
-                encoder_path = 'trained_models/encoders/training_'+train_model+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/checkpoint"
+                encoder_path = 'trained_models/encoders/training_'+train_model+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/cp.ckpt"
             else:
-                encoder_path = 'trained_models/encoders/training_'+train_model+"_"+dataset+"_n_run_"+str(n_run)+"/checkpoint"
+                encoder_path = 'trained_models/encoders/training_'+train_model+"_"+dataset+"_n_run_"+str(n_run)+"/cp.ckpt"
 
         # save encoder weights
         encoder.save_weights(encoder_path)
@@ -198,14 +198,14 @@ if(__name__=="__main__"):
             member.fit(x=trainX, y=trainY, epochs=n_epochs, batch_size = batch_size, callbacks=[lr_callback, ckpt_callback], shuffle=True)
             if(train_modBlock):
                 if(train_ablate):
-                    model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"_member_"+str(j+1)+"/checkpoint"
+                    model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"_member_"+str(j+1)+"/cp.ckpt"
                 else:
-                    model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_n_run_"+str(n_run)+"_member_"+str(j+1)+"/checkpoint"
+                    model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_n_run_"+str(n_run)+"_member_"+str(j+1)+"/cp.ckpt"
             else:
                 if(train_ablate):
-                    model_path = 'trained_models/full_models_afterTraing/training_'+train_model+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"_member_"+str(j+1)+"/checkpoint"
+                    model_path = 'trained_models/full_models_afterTraing/training_'+train_model+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"_member_"+str(j+1)+"/cp.ckpt"
                 else:
-                    model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+dataset+"_n_run_"+str(n_run)+"_member_"+str(j+1)+"/checkpoint"
+                    model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+dataset+"_n_run_"+str(n_run)+"_member_"+str(j+1)+"/cp.ckpt"
 
             member.save_weights(model_path)
 
