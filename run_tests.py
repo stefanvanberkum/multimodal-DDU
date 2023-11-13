@@ -31,6 +31,7 @@ parser.add_argument("--batch_size", default=128, type=int)
 parser.add_argument("--test", default = "accuracy", type=str) # 'accuracy', 'ece', 'ood'
 parser.add_argument("--n_runs", default = 10, type=int) # number of training runs to average over
 parser.add_argument("--uncertainty", default='DDU', type=str) # 'DDU', 'energy', 'softmax'
+parser.add_argument("--user", required=True, type=str)
 
 
 # load pre-trained models
@@ -46,6 +47,7 @@ if(__name__ == "__main__"):
     test = args.test
     n_runs = args.n_runs
     uncertainty = args.uncertainty
+    user = args.user
 
     if(train_ds == 'cifar10'):
         n_classes = 10
@@ -97,45 +99,59 @@ if(__name__ == "__main__"):
             model, encoder = resnet(stages=[64,128,256,512],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes, modBlock = train_modBlock, ablate = train_ablate)
         elif(test_model == "wrn"):
             # Wide-Resnet 28-10 - modify for different architecture
-            model, encoder = WRN(N=4, in_shape=(32,32,3), k=10, n_out=n_classes, modBlock=train_modBlock, ablate = train_ablate) 
+            model, encoder = WRN(N=4, in_shape=(32,32,3), k=3, n_out=n_classes, modBlock=train_modBlock,
+                                 ablate = train_ablate)
         elif(test_model == "wrn-ensemble"):
-            model, encoder = ensemble_wrn(n_members, N=4, in_shape=(32,32,3), k=10, n_out=n_classes, modBlock=train_modBlock, ablate = train_ablate)
+            model, encoder = ensemble_wrn(n_members, N=4, in_shape=(32,32,3), k=3, n_out=n_classes,
+                                          modBlock=train_modBlock, ablate = train_ablate)
         elif(test_model == "resnet-ensemble"):
             model, encoder = ensemble_resnet(n_members, stages=[64,128],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes, modBlock = train_modBlock, ablate=train_ablate)
-        else: 
+        else:
             print("Wrong model name chosen!")
-        
-        if(train_modBlock):
-            if(train_ablate):
-                model_path = 'trained_models/full_models/training_'+test_model+"_"+"SN"+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
-            else: 
-                model_path = 'trained_models/full_models/training_'+test_model+"_"+"SN"+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
-        else:
-            if(train_ablate):
-                model_path = 'trained_models/full_models/training_'+test_model+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
-            else: 
-                model_path = 'trained_models/full_models/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
-        
-        if(train_modBlock):
-            if(train_ablate):
-                encoder_path = 'trained_models/encoders/training_'+test_model+"_"+"SN"+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
-            else: 
-                encoder_path = 'trained_models/encoders/training_'+test_model+"_"+"SN"+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
-        else:
-            if(train_ablate):
-                encoder_path = 'trained_models/encoders/training_'+test_model+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
-            else: 
-                encoder_path = 'trained_models/encoders/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
 
+        if(train_modBlock):
+            if(train_ablate):
+                ckpt_path = 'trained_models/full_models/training_'+test_model+"_"+"SN"+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
+            else:
+                ckpt_path = 'trained_models/full_models/training_'+test_model+"_"+"SN"+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
+        else:
+            if(train_ablate):
+                ckpt_path = 'trained_models/full_models/training_'+test_model+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
+            else:
+                ckpt_path = 'trained_models/full_models/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
+        
+        if(train_modBlock):
+            if(train_ablate):
+                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+"SN"+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/checkpoint"
+            else: 
+                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+"SN"+"_"+train_ds+"_n_run_"+str(i+1)+"/checkpoint"
+        else:
+            if(train_ablate):
+                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/checkpoint"
+            else: 
+                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"/checkpoint"
+
+        if(train_modBlock):
+            if(train_ablate):
+                encoder_path = '/home/'+user+'trained_models/encoders/training_'+test_model+"_"+"SN"+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
+            else:
+                encoder_path = '/home/'+user+'trained_models/encoders/training_'+test_model+"_"+"SN"+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
+        else:
+            if(train_ablate):
+                encoder_path = '/home/'+user+'trained_models/encoders/training_'+test_model+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
+            else:
+                encoder_path = '/home/'+user+'trained_models/encoders/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
+        
+        model.load_weights(model_path).expect_partial()
+        # model.load_weights(ckpt_path).expect_partial()
         if(test == "accuracy"):
             # load weights from i-th training run
             # checkpoints to save weights of the model
-            # model.load_weights(model_path).expect_partial()
+            # model.load_weights(ckpt_path).expect_partial()
 
             # evaluate accuracy on test_ds
             _, acc = model.evaluate(testX, testY, batch_size=batch_size)
             score.append(acc)
-
         
         elif(test == "ece"):
             # caluclate expected calibration error on test set
