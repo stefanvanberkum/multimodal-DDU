@@ -25,7 +25,7 @@ do
     if [modBlock=True]
     then
       if [ablate=True]
-	    then
+      then
         python train_models.py --model $model_type --dataset $dataset --modBlock --ablate --n_run $run
       else
         python train_models.py --model $model_type --dataset $dataset --modBlock --n_run $run
