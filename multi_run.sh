@@ -21,7 +21,7 @@ ablate=False
 for run in {1..5}
 do
 	for dataset in cifar10 cifar100
-	do
+  do
 	  if [modBlock=True]
 	  then
 	    if [ablate=True]
@@ -41,4 +41,3 @@ do
 		wait
 	done
 done
-
