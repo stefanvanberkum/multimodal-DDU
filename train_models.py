@@ -14,7 +14,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", required=True, type=str) # 'wrn', 'resnet', 'wrn-ensemble', 'resnet-ensemble'
 parser.add_argument("--dataset", required=True, type=str) # 'cifar10', 'cifar100'
-parser.add_argument("--modBlock", default=True, type=bool)
+parser.add_argument("--modBlock", default=False, type=bool)
 parser.add_argument("--ablate", default=False, type=bool)
 parser.add_argument("--n_epochs", default=350, type=int)
 parser.add_argument("--batch_size", default=128, type=int)
@@ -41,7 +41,6 @@ if(__name__=="__main__"):
     batch_size = args.batch_size
     n_epochs = args.n_epochs
     n_run = args.n_run
-    print("Ablate: ", train_ablate)
 
     # load training data
     if(dataset == 'cifar10'):
