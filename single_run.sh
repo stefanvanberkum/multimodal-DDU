@@ -19,33 +19,26 @@ dataset=cifar10
 
 # WRN softmax.
 model_type=wrn
-modBlock=False
-ablate=False
 
-python train_models.py --model $model_type --dataset $dataset --modBlock $modBlock --ablate $ablate --n_run $run
+python train_models.py --model $model_type --dataset $dataset --n_run $run
 wait
 
 # WRN DDU.
 model_type=wrn
-modBlock=True
-ablate=False
 
-python train_models.py --model $model_type --dataset $dataset --modBlock $modBlock --ablate $ablate --n_run $run
+python train_models.py --model $model_type --dataset $dataset --modBlock --n_run $run
 wait
 
 # WRN ensemble.
 model_type=wrn-ensemble
-modBlock=False
-ablate=False
 
-python train_models.py --model $model_type --dataset $dataset --modBlock $modBlock --ablate $ablate --n_run $run
+python train_models.py --model $model_type --dataset $dataset --n_run $run
 wait
 
 # WRN DDU ablation.
 model_type=wrn
 modBlock=True
-ablate=True
 
-python train_models.py --model $model_type --dataset $dataset --modBlock $modBlock --ablate $ablate --n_run $run
+python train_models.py --model $model_type --dataset $dataset --modBlock --ablate --n_run $run
 wait
 

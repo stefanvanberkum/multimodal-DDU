@@ -14,7 +14,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", required=True, type=str) # 'wrn', 'resnet', 'wrn-ensemble', 'resnet-ensemble'
 parser.add_argument("--dataset", required=True, type=str) # 'cifar10', 'cifar100'
-parser.add_argument("--modBlock", default=True, type=bool)
+parser.add_argument("--modBlock", default=False, type=bool)
 parser.add_argument("--ablate", default=False, type=bool)
 parser.add_argument("--n_epochs", default=350, type=int)
 parser.add_argument("--batch_size", default=128, type=int)
@@ -153,8 +153,7 @@ if(__name__=="__main__"):
                 model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+"SN"+"_"+dataset+"_n_run_"+str(n_run)+"/checkpoint"
         else:
             if(train_ablate):
-                model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+dataset+("_ablation"
-                                                                                                          "")+"_n_run_"+str(n_run)+"/checkpoint"
+                model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+"/checkpoint"
             else:
                 model_path = 'trained_models/full_models_afterTraining/training_'+train_model+"_"+dataset+"_n_run_"+str(n_run)+"/checkpoint"
         model.save_weights(model_path)
