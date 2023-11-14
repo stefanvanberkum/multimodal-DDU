@@ -14,11 +14,11 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", required=True, type=str) # 'wrn', 'resnet', 'wrn-ensemble', 'resnet-ensemble'
 parser.add_argument("--dataset", required=True, type=str) # 'cifar10', 'cifar100'
-parser.add_argument("--modBlock", default=False, type=bool)
-parser.add_argument("--ablate", default=False, type=bool)
+parser.add_argument("--modBlock", default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument("--ablate", default=False, action=argparse.BooleanOptionalAction)
 parser.add_argument("--n_epochs", default=350, type=int)
 parser.add_argument("--batch_size", default=128, type=int)
-parser.add_argument("--n_run",required=True, type=int)
+parser.add_argument("--n_run", required=True, type=int)
 
 
 # # parameters for training

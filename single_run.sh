@@ -3,16 +3,16 @@
 # A single run for all WRN models.
 
 # WRN models:
-# - WRN softmax: model_type=wrn, modBlock=False, ablate=False
-# - WRN DDU: model_type=wrn, modBlock=True, ablate=False
-# - WRN ensemble: model_type=wrn-ensemble, modBlock=False, ablate=False
-# - WRN DDU ablation: model_type=wrn, modBlock=True, ablate=True
+# - WRN softmax: model_type=wrn, modBlock=false, ablate=false
+# - WRN DDU: model_type=wrn, modBlock=true, ablate=false
+# - WRN ensemble: model_type=wrn-ensemble, modBlock=false, ablate=false
+# - WRN DDU ablation: model_type=wrn, modBlock=true, ablate=true
 
 # ResNet models:
-# - ResNet softmax: model_type=resnet, modBlock=False, ablate=False
-# - ResNet DDU: model_type=resnet, modBlock=True, ablate=False
-# - ResNet ensemble: model_type=resnet-ensemble, modBlock=False, ablate=False
-# - ResNet DDU ablation: model_type=resnet, modBlock=True, ablate=True
+# - ResNet softmax: model_type=resnet, modBlock=false, ablate=false
+# - ResNet DDU: model_type=resnet, modBlock=true, ablate=false
+# - ResNet ensemble: model_type=resnet-ensemble, modBlock=false, ablate=false
+# - ResNet DDU ablation: model_type=resnet, modBlock=true, ablate=true
 
 run=1
 dataset=cifar10
@@ -37,7 +37,6 @@ wait
 
 # WRN DDU ablation.
 model_type=wrn
-modBlock=True
 
 python train_models.py --model $model_type --dataset $dataset --modBlock --ablate --n_run $run
 wait
