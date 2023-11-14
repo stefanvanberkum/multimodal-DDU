@@ -122,14 +122,14 @@ if(__name__ == "__main__"):
         
         if(train_modBlock):
             if(train_ablate):
-                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+"SN"+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/checkpoint"
+                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+"SN"+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
             else: 
-                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+"SN"+"_"+train_ds+"_n_run_"+str(i+1)+"/checkpoint"
+                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+"SN"+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
         else:
             if(train_ablate):
-                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/checkpoint"
+                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+train_ds+"_ablation"+"_n_run_"+str(i+1)+"/cp.ckpt"
             else: 
-                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"/checkpoint"
+                model_path = '/home/'+user+'/trained_models/full_models_afterTraining/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"/cp.ckpt"
 
         if(train_modBlock):
             if(train_ablate):
