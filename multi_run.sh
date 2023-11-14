@@ -22,16 +22,16 @@ for run in {1..5}
 do
   for dataset in cifar10 cifar100
   do
-    if [modBlock=True]
+    if [ modBlock = True ]
     then
-      if [ablate=True]
+      if [ ablate = True ]
       then
         python train_models.py --model $model_type --dataset $dataset --modBlock --ablate --n_run $run
       else
         python train_models.py --model $model_type --dataset $dataset --modBlock --n_run $run
       fi
     else
-      if [ablate=True]
+      if [ ablate = True ]
       then
         python train_models.py --model $model_type --dataset $dataset --ablate --n_run $run
       else
