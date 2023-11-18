@@ -45,13 +45,17 @@ class DDU:
 
         n_obs = len(z)
         log_probs = np.zeros((n_obs, self.n_class))
+        # probs = np.zeros((n_obs, self.n_class))
         for i in range(n_obs):
             sample = z[i, :]
 
             for j in range(self.n_class):
                 c = self.classes[j]
                 log_probs[i, j] = self.log_prior[c] + self.components[c].logpdf(sample)
+                # probs[i,j] = np.exp(self.log_prior[c])*self.components[c].pdf(sample)
         epistemic = np.exp(logsumexp(log_probs, axis=1))
+        # epistemic = probs
+
 
         return aleatoric, epistemic
 

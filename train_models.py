@@ -45,7 +45,7 @@ if(__name__=="__main__"):
 
     # load training data
     if(dataset == 'cifar10'):
-        ds_train = tfds.load("cifar10", split='train')
+        ds_train = tfds.load("cifar10", split='test')
 
         # batch training data
         # train_batches = ds_train.shuffle(100).batch(batch_size)
@@ -69,8 +69,8 @@ if(__name__=="__main__"):
 
         n_classes = 100
 
-    trainX = np.zeros((50000, 32,32,3), dtype=np.float32)
-    trainY = np.zeros((50000,), dtype=np.int32)
+    trainX = np.zeros((10000, 32,32,3), dtype=np.float32)
+    trainY = np.zeros((10000,), dtype=np.int32)
     testX = np.zeros((10000, 32, 32,3), dtype=np.float32)
     testY = np.zeros((10000,), dtype=np.int32)
 
