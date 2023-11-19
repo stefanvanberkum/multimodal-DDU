@@ -29,7 +29,7 @@ class DDU:
             subset = z[y == c, :]
             mu = np.mean(subset, axis=0)
             Sigma = np.cov(subset, rowvar=False)
-            self.components[c] = multivariate_normal(mu, Sigma)
+            self.components[c] = multivariate_normal(mu, Sigma, allow_singular=True)
 
     def predict(self, z, p):
         """Predict uncertainty for one sample.

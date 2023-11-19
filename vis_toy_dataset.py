@@ -113,7 +113,7 @@ def visualize_single_uncertainty(X, y, model,encoder, min=-2.0, max=2.0, res=200
         features_train_projected = pca.fit_transform(features_train)
         plt.scatter(features_train_projected[:,0], features_train_projected[:,1], c=y, s=10, alpha =0.3, cmap=ListedColormap(['orange', 'blue', 'green']))
         aleatoric, epistemic  = ddu.predict(features_xy,softmax(predictions, axis=1))
-        print("Epistemic: ", np.where(epistemic> 0.0))
+        print("Epistemic: ", epistemic[epistemic > 0])
         Z[indices] = -epistemic
     else: 
         Z[indices] = softmax_entropy
@@ -180,19 +180,19 @@ if(__name__=="__main__"):
   
     lr_callback = tf.keras.callbacks.LearningRateScheduler(scheduler, verbose=1)
     # train single model
-    # model.fit(x=X, y=y, epochs=50, batch_size = 64, callbacks=[lr_callback])
+    model.fit(x=X, y=y, epochs=50, batch_size = 64, callbacks=[lr_callback])
 
 
     # train ensemble
-    models, encodders = fc_ensemble(in_shape=(2,), num_classes=3, n_members = 3)
-    i= 0
-    for model in models:
-        print("Training member %d..."%(i+1))
-        model.fit(x=X, y=y, epochs=50, batch_size = 64, callbacks=[lr_callback])
-        i+=1
+    # models, encodders = fc_ensemble(in_shape=(2,), num_classes=3, n_members = 3)
+    # i= 0
+    # for model in models:
+    #     print("Training member %d..."%(i+1))
+    #     model.fit(x=X, y=y, epochs=50, batch_size = 64, callbacks=[lr_callback])
+    #     i+=1
 
 
     
     # visualize uncertainty
-    # visualize_single_uncertainty(X, y, model, encoder, mode='softmax')
-    visualize_ensemble_uncertainty(X,y,models, mode='mi')
+    visualize_single_uncertainty(X, y, model, encoder, mode='ddu')
+    # visualize_ensemble_uncertainty(X,y,models, mode='dd')
