@@ -111,10 +111,22 @@ def visualize_single_uncertainty(X, y, model,encoder, min=-2.0, max=2.0, res=200
         # project to lower dimensions
         pca = PCA(n_components=2)
         features_train_projected = pca.fit_transform(features_train)
-        plt.scatter(features_train_projected[:,0], features_train_projected[:,1], c=y, s=10, alpha =0.3, cmap=ListedColormap(['orange', 'blue', 'green']))
-        aleatoric, epistemic  = ddu.predict(features_xy,softmax(predictions, axis=1))
-        print("Epistemic: ", epistemic[epistemic > 0])
-        Z[indices] = -epistemic
+        plt.scatter(features_train_projected[:, 0], features_train_projected[:,1], c=y, s=10, alpha =0.3,
+                    cmap=ListedColormap(['orange', 'blue', 'green']))
+        aleatoric, epistemic = ddu.predict(features_xy, softmax(predictions, axis=1))
+        log_density = -epistemic
+
+        _, train_epistemic = ddu.predict(features_train, softmax(model.predict(X), axis=1))
+        log_train_density = -train_epistemic
+        train_min_density = np.min(log_train_density)
+        Z[indices] = log_density - train_min_density
+
+        z_min = Z[np.isfinite(Z)].min()
+        z_max = Z[np.isfinite(Z)].max()
+        Z[Z == np.inf] = z_max
+        Z[Z == -np.inf] = z_min
+
+        Z = np.clip(Z, -1, z_max) / z_max
     else: 
         Z[indices] = softmax_entropy
     fig, ax = plt.subplots(1,1)

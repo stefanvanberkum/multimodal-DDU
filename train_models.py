@@ -8,6 +8,7 @@ from WRN import WRN, wrn_uncertainty
 from resNet import resnet, resnet_uncertainty
 from ensembles import ensemble_resnet, ensemble_uncertainty, ensemble_wrn
 import argparse
+import os
 
 
 # parameters for training
@@ -41,6 +42,8 @@ if(__name__=="__main__"):
     batch_size = args.batch_size
     n_epochs = args.n_epochs
     n_run = args.n_run
+
+    os.makedirs("trained_models", exist_ok=True)
 
     # load training data
     if(dataset == 'cifar10'):

@@ -1,4 +1,7 @@
-"""Uncertainty estimation methods."""
+"""Uncertainty estimation methods.
+
+Each of the epistemic uncertainty estimation methods returns the negative log density (except softmax, this returns
+entropy)."""
 
 import numpy as np
 from scipy.special import logsumexp
@@ -29,7 +32,15 @@ class DDU:
             subset = z[y == c, :]
             mu = np.mean(subset, axis=0)
             Sigma = np.cov(subset, rowvar=False)
-            self.components[c] = multivariate_normal(mu, Sigma, allow_singular=True)
+
+            jitters = [0,  np.finfo(np.double).smallest_normal] + [10 ** exp for exp in range(-308, 0, 1)]
+            for jitter in jitters:
+                try:
+                    self.components[c] = multivariate_normal(mu, Sigma + jitter * np.eye(Sigma.shape[0]))
+                except np.linalg.LinAlgError as e:
+                    if "symmetric positive definite" in str(e):
+                        continue
+                break
 
     def predict(self, z, p):
         """Predict uncertainty for one sample.
@@ -45,17 +56,13 @@ class DDU:
 
         n_obs = len(z)
         log_probs = np.zeros((n_obs, self.n_class))
-        # probs = np.zeros((n_obs, self.n_class))
         for i in range(n_obs):
             sample = z[i, :]
 
             for j in range(self.n_class):
                 c = self.classes[j]
                 log_probs[i, j] = self.log_prior[c] + self.components[c].logpdf(sample)
-                # probs[i,j] = np.exp(self.log_prior[c])*self.components[c].pdf(sample)
-        epistemic = np.exp(logsumexp(log_probs, axis=1))
-        # epistemic = np.sum(probs, axis=1)
-
+        epistemic = -logsumexp(log_probs, axis=1)
 
         return aleatoric, epistemic
 
@@ -80,7 +87,7 @@ class DDU_KD:
         """
 
         aleatoric, _ = softmax_uncertainty(p)
-        epistemic = np.exp(self.kde.score_samples(z))
+        epistemic = -self.kde.score_samples(z)
 
         return aleatoric, epistemic
 
@@ -127,7 +134,7 @@ class DDU_CWKD:
             for j in range(self.n_class):
                 c = self.classes[j]
                 log_probs[i, j] = self.log_prior[c] + self.components[c].score_samples(sample)
-        epistemic = np.exp(logsumexp(log_probs, axis=1))
+        epistemic = -logsumexp(log_probs, axis=1)
 
         return aleatoric, epistemic
 
@@ -154,7 +161,7 @@ class DDU_VI:
         """
 
         aleatoric, _ = softmax_uncertainty(p)
-        epistemic = np.exp(self.gmm.score_samples(z))
+        epistemic = -self.gmm.score_samples(z)
 
         return aleatoric, epistemic
 
