@@ -25,14 +25,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model", required=True, type=str) # 'wrn', 'resnet', 'wrn-ensemble', 'resnet-ensemble'
 parser.add_argument("--train_ds", required=True, type=str) # 'cifar10', 'cifar100'
 parser.add_argument("--test_ds", required=True, type=str) # 'cifar100', 'SVHN', 'Tiny-ImageNet'
-parser.add_argument("--modBlock", default=True, type=bool)
-parser.add_argument("--ablate", default=False, type=bool)
+parser.add_argument("--modBlock", default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument("--ablate", default=False, action=argparse.BooleanOptionalAction)
 # parser.add_argument("--n_epochs", default=350, type=int)
 parser.add_argument("--batch_size", default=128, type=int)
 parser.add_argument("--test", default = "accuracy", type=str) # 'accuracy', 'ece', 'ood'
 parser.add_argument("--n_runs", default = 5, type=int) # number of training runs to average over
 parser.add_argument("--uncertainty", default='DDU', type=str) # 'DDU', 'energy', 'softmax'
-# parser.add_argument("--user", required=True, type=str)
 
 
 # load pre-trained models
@@ -48,7 +47,6 @@ if(__name__ == "__main__"):
     test = args.test
     n_runs = args.n_runs
     uncertainty = args.uncertainty
-    # user = args.user
 
     if(train_ds == 'cifar10'):
         n_classes = 10
@@ -305,10 +303,3 @@ if(__name__ == "__main__"):
                     # append auroc score to list
                     score.append(auroc*100)
     print("Mean score %s:  %f" %(test,np.mean(score)))
-
-    
-
-
-
-
-
