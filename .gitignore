@@ -1,3 +1,4 @@
 # ignore /trained_models folder
 trained_models/
-__pycache__
+__pycache__/
+.DS_Store
