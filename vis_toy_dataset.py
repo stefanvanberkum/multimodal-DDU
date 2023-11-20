@@ -165,7 +165,7 @@ if(__name__=="__main__"):
     # print("Training y:", y.shape)
 
     # train models
-    model, encoder = fc_resnet(in_shape=(2,), num_classes=3)
+    model, encoder = fc_net(in_shape=(2,), num_classes=3)
     # print("X shape: ", np.shape(X))
     # logits = model(X[0:10])
     # print("Logits: ", logits)
@@ -180,7 +180,7 @@ if(__name__=="__main__"):
   
     lr_callback = tf.keras.callbacks.LearningRateScheduler(scheduler, verbose=1)
     # train single model
-    model.fit(x=X, y=y, epochs=50, batch_size = 64, callbacks=[lr_callback])
+    model.fit(x=X, y=y, epochs=150, batch_size = 64, callbacks=[lr_callback])
 
 
     # train ensemble

@@ -22,7 +22,7 @@ for run in {1..5}
 do
 	for dataset in cifar10 cifar100
 	do
-		python train_models.py --model $model_type --dataset $dataset --modBlock $modBlock --ablate $ablate --n_run $run
+		python train_models.py --model $model_type --dataset $dataset --modBlock $modBlock --ablate $ablate --n_run $run 
 		wait
 	done
 done

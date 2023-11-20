@@ -54,7 +54,7 @@ class DDU:
                 log_probs[i, j] = self.log_prior[c] + self.components[c].logpdf(sample)
                 # probs[i,j] = np.exp(self.log_prior[c])*self.components[c].pdf(sample)
         epistemic = np.exp(logsumexp(log_probs, axis=1))
-        # epistemic = probs
+        # epistemic = np.sum(probs, axis=1)
 
 
         return aleatoric, epistemic
