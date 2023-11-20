@@ -170,7 +170,7 @@ def softmax_uncertainty(p):
     """Softmax entropy for both aleatoric and epistemic uncertainty.
 
     :param p: An output prediction matrix of shape (n_obs, n_class).
-    :return: A tuple with log uncertainties (aleatoric, epistemic).
+    :return: A tuple with uncertainties (aleatoric, epistemic).
     """
 
     aleatoric = entropy(p, axis=1)
