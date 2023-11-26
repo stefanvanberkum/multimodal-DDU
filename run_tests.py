@@ -25,7 +25,7 @@ import datasets
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", required=True, type=str) # 'wrn', 'resnet', 'wrn-ensemble', 'resnet-ensemble'
 parser.add_argument("--train_ds", required=True, type=str) # 'cifar10', 'cifar100'
-parser.add_argument("--test_ds", required=True, type=str) # 'cifar100', 'SVHN', 'Tiny-ImageNet'
+parser.add_argument("--test_ds", required=True, type=str) # 'cifar100', 'SVHN', 'imageNet'
 parser.add_argument("--modBlock", default=False, action=argparse.BooleanOptionalAction)
 parser.add_argument("--ablate", default=False, action=argparse.BooleanOptionalAction)
 # parser.add_argument("--n_epochs", default=350, type=int)
@@ -107,9 +107,6 @@ if(__name__ == "__main__"):
             oodY[i] = elem['label']
     
     elif(test_ds == 'imageNet'):
-        # TODO:
-        # 1.) Find version of tiny-ImageNet to download
-        # 2.) Images are of size 64x64x3 - cropping to 32x32x3??
         
         # load tiny-image-net dataset from huggingface
         ds_ood= datasets.load_dataset('Maysee/tiny-imagenet', split='valid')
@@ -234,7 +231,7 @@ if(__name__ == "__main__"):
                     labels_out = np.ones(np.shape(oodY))
                     labels = np.concatenate([labels_in, labels_out], axis=0)
                     logits_in = model.predict(testX, batch_size=batch_size)
-                    logits_out = model.predict(oodX, batch_size=batch_size) # TODO: change to ood data
+                    logits_out = model.predict(oodX, batch_size=batch_size) 
                     aleatoric_out, epistemic_out = resnet_uncertainty(logits_out, mode=uncertainty)
                     aleatoric_in, epistemic_in = resnet_uncertainty(logits_in, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
@@ -243,22 +240,15 @@ if(__name__ == "__main__"):
                 elif(uncertainty == 'DDU'):
                     # define labels for in-distribution and out-of-distribution data
                     labels_in = np.ones(np.shape(testY)) # define in-distribution data as ones - DDU estimates probability of being in-distribution data
-                    labels_out = np.zeros(np.shape(testY)) # TODO: change to ood dataset
+                    labels_out = np.zeros(np.shape(oodY)) 
                     labels = np.concatenate([labels_in, labels_out], axis=0)
-                    probs_in = softmax(model.predict(testX, batch_size=batch_size))
-                    probs_out = softmax(model.predict(oodX, batch_size=batch_size)) 
+                    probs_in = softmax(model.predict(testX, batch_size=batch_size), axis=-1)
+                    probs_out = softmax(model.predict(oodX, batch_size=batch_size), axis=-1) 
                     # map training samples to feature space to fit estimator
                     train_features = encoder.predict(trainX, batch_size=batch_size) 
                     # print("Test y: ", np.unique(testY))
 
-
-                    # remove class 4 and 6 to avoid feature collapse - TODO: remove for actual testing!!
-                    train_features = np.delete(train_features, np.where(testY==4), axis=0)
-                    testY = np.delete(testY, np.where(testY==4), axis=0)
-                    train_features = np.delete(train_features, np.where(testY==6), axis=0)
-                    testY = np.delete(testY, np.where(testY==6), axis=0)
-
-                    ddu = DDU(train_features, testY) # TODO: change to trainY
+                    ddu = DDU(train_features, trainY) 
                     
                     # predict uncertainty on in-distribution and out-of-distribution data
                     features_in = encoder.predict(testX)
@@ -281,7 +271,7 @@ if(__name__ == "__main__"):
                     labels_out = np.ones(np.shape(oodY))
                     labels = np.concatenate([labels_in, labels_out], axis=0)
                     logits_in = model.predict(testX, batch_size=batch_size) 
-                    logits_out = model.predict(oodX, batch_size=batch_size) # TODO: change to ood data
+                    logits_out = model.predict(oodX, batch_size=batch_size) 
                     aleatoric_out, epistemic_out = wrn_uncertainty(logits_out, mode=uncertainty)
                     aleatoric_in, epistemic_in = wrn_uncertainty(logits_in, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
@@ -291,7 +281,7 @@ if(__name__ == "__main__"):
                     labels_out = np.ones(np.shape(oodY))
                     labels = np.concatenate([labels_in, labels_out], axis=0)
                     logits_in = model.predict(testX, batch_size=batch_size)
-                    logits_out = model.predict(oodX, batch_size=batch_size) # TODO: change to ood data
+                    logits_out = model.predict(oodX, batch_size=batch_size)
                     aleatoric_out, epistemic_out = wrn_uncertainty(logits_out, mode=uncertainty)
                     aleatoric_in, epistemic_in = wrn_uncertainty(logits_in, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
@@ -306,18 +296,10 @@ if(__name__ == "__main__"):
 
                     # map training samples to feature space to fit estimator
 
-                    train_features = encoder.predict(trainX, batch_size=batch_size) # TODO: change to trainX
+                    train_features = encoder.predict(trainX, batch_size=batch_size)
                     # print("Test y: ", np.unique(testY))
 
-
-                    # remove class 4 and 6 to avoid feature collapse - TODO: remove for actual testing!!
-                    train_features = np.delete(train_features, np.where(testY==4), axis=0)
-                    testY = np.delete(testY, np.where(testY==4), axis=0)
-                    train_features = np.delete(train_features, np.where(testY==6), axis=0)
-                    testY = np.delete(testY, np.where(testY==6), axis=0)
-
-                    ddu = DDU(train_features, testY) # TODO: change to trainY
-                    
+                    ddu = DDU(train_features, trainY)                    
                     # predict uncertainty on in-distribution and out-of-distribution data
                     features_in = encoder.predict(testX)
                     featoures_out = encoder.predict(oodX)
@@ -332,4 +314,7 @@ if(__name__ == "__main__"):
 
                     # append auroc score to list
                     score.append(auroc*100)
+
     print("Mean score %s:  %f" %(test,np.mean(score)))
+    print("Var score %s: %f" % (test, np.var(score)))
+
