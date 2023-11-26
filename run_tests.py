@@ -19,6 +19,7 @@ from ensembles import ensemble_resnet, ensemble_wrn, ensemble_uncertainty
 from uncertainty import DDU, DDU_KD, DDU_CWKD, DDU_VI
 from sklearn.metrics import roc_auc_score
 from scipy.special import softmax
+import datasets
 
 # parameters for testing
 parser = argparse.ArgumentParser()
@@ -109,7 +110,37 @@ if(__name__ == "__main__"):
         # TODO:
         # 1.) Find version of tiny-ImageNet to download
         # 2.) Images are of size 64x64x3 - cropping to 32x32x3??
-        pass
+        
+        # load tiny-image-net dataset from huggingface
+        ds_ood= datasets.load_dataset('Maysee/tiny-imagenet', split='valid')
+        # ds = datasets.Dataset.from_dict(data)
+        ds_ood_tf = ds_ood.with_format("tf")
+        # print("-----Dataset-----")
+        # print(ds_ood_tf[0]['image'])
+        # print("------------")
+        oodX = np.zeros((10000, 32, 32, 3), dtype=np.float32)
+        oodY = np.zeros((10000,), dtype=np.int32)
+        wrongShapeIndices = []
+        count = 0
+        for i, elem in enumerate(ds_ood_tf):
+            image = tf.cast(elem['image'], tf.float32)/255.
+
+            # check if image has only one channel
+            if(tf.shape(image).shape[0] == 2):
+                # print("Shape: ",tf.shape(image).shape)
+                reshaped_image = tf.image.resize(tf.expand_dims(image, axis=-1), [32,32]).numpy()
+
+                # repeat grayscale images along all three channels
+                oodX[i, :, :, 0] = reshaped_image[:,:,0]
+                oodX[i, :, :, 1] = reshaped_image[:,:,0]
+                oodX[i, :, :, 2] = reshaped_image[:,:,0]
+                oodY[i] = elem['label']
+                wrongShapeIndices.append(i)
+                continue
+            image = tf.cast(elem['image'], tf.float32)/255.
+            oodX[i,:,:,:] = tf.image.resize(tf.cast(elem['image'], tf.float32)/255., [32,32]).numpy()
+            oodY[i] = elem['label']
+            count += 1
 
     for i in range(n_runs):
         score = []
@@ -240,7 +271,6 @@ if(__name__ == "__main__"):
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic) 
 
                     # print("Epistemic: ", epistemic)
-
 
                     # append auroc score to list
                     score.append(auroc*100)
