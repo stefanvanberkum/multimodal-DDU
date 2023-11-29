@@ -19,12 +19,13 @@ from ensembles import ensemble_resnet, ensemble_wrn, ensemble_uncertainty
 from uncertainty import DDU, DDU_KD, DDU_CWKD, DDU_VI
 from sklearn.metrics import roc_auc_score
 from scipy.special import softmax
+import datasets
 
 # parameters for testing
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", required=True, type=str) # 'wrn', 'resnet', 'wrn-ensemble', 'resnet-ensemble'
 parser.add_argument("--train_ds", required=True, type=str) # 'cifar10', 'cifar100'
-parser.add_argument("--test_ds", required=True, type=str) # 'cifar100', 'SVHN', 'Tiny-ImageNet'
+parser.add_argument("--test_ds", required=True, type=str) # 'cifar100', 'SVHN', 'imageNet'
 parser.add_argument("--modBlock", default=False, action=argparse.BooleanOptionalAction)
 parser.add_argument("--ablate", default=False, action=argparse.BooleanOptionalAction)
 # parser.add_argument("--n_epochs", default=350, type=int)
@@ -32,6 +33,9 @@ parser.add_argument("--batch_size", default=128, type=int)
 parser.add_argument("--test", default = "accuracy", type=str) # 'accuracy', 'ece', 'ood'
 parser.add_argument("--n_runs", default = 5, type=int) # number of training runs to average over
 parser.add_argument("--uncertainty", default='DDU', type=str) # 'DDU', 'energy', 'softmax'
+parser.add_argument("--temperature_scaling", default=True, type=bool)
+parser.add_argument("--temperature", default = 1.0, type=float)
+parser.add_argument("--temperature_criterion", default='ece', type=str)
 
 
 # load pre-trained models
@@ -47,6 +51,10 @@ if(__name__ == "__main__"):
     test = args.test
     n_runs = args.n_runs
     uncertainty = args.uncertainty
+    temperature_scaling = args.temperature_scaling
+    temp_scaling_split = 0.2
+    temp = args.temperature
+    temp_criterion = args.temperature_criterion
 
     if(train_ds == 'cifar10'):
         n_classes = 10
@@ -56,10 +64,22 @@ if(__name__ == "__main__"):
         ds_test = tfds.load("cifar10", split='test')
         testX = np.zeros((10000, 32, 32,3), dtype=np.float32)
         testY = np.zeros((10000,), dtype=np.int32)
+
+        # sample 10-percent for temperate scaling
+        valX = np.zeros((int(temp_scaling_split*50000),32,32,3), dtype=np.float32)
+        valY = np.zeros((int(temp_scaling_split*50000),), dtype=np.int32)
+        valIndices = np.random.choice(50000, int(temp_scaling_split*50000), replace=False)
+        valCount = 0
         for i, elem in enumerate(ds_train):
             # print(elem)
             trainX[i, :, :, :] = tf.cast(elem['image'], tf.float32)/255.
             trainY[i] = elem['label']
+            # if(np.isin(valIndices, i).all()):
+            if(i in valIndices):
+                # print("IN !")
+                valX[valCount, :, : ,: ] = tf.cast(elem['image'], tf.float32)/255.
+                valY[valCount] = elem['label']
+                valCount += 1
         for i, elem in enumerate(ds_test):
             testX[i, :, :, :] = tf.cast(elem['image'], tf.float32)/255.
             testY[i] = elem['label']
@@ -106,13 +126,41 @@ if(__name__ == "__main__"):
             oodY[i] = elem['label']
     
     elif(test_ds == 'imageNet'):
-        # TODO:
-        # 1.) Find version of tiny-ImageNet to download
-        # 2.) Images are of size 64x64x3 - cropping to 32x32x3??
-        pass
+        
+        # load tiny-image-net dataset from huggingface
+        ds_ood= datasets.load_dataset('Maysee/tiny-imagenet', split='valid')
+        # ds = datasets.Dataset.from_dict(data)
+        ds_ood_tf = ds_ood.with_format("tf")
+        # print("-----Dataset-----")
+        # print(ds_ood_tf[0]['image'])
+        # print("------------")
+        oodX = np.zeros((10000, 32, 32, 3), dtype=np.float32)
+        oodY = np.zeros((10000,), dtype=np.int32)
+        wrongShapeIndices = []
+        count = 0
+        for i, elem in enumerate(ds_ood_tf):
+            image = tf.cast(elem['image'], tf.float32)/255.
 
+            # check if image has only one channel
+            if(tf.shape(image).shape[0] == 2):
+                # print("Shape: ",tf.shape(image).shape)
+                reshaped_image = tf.image.resize(tf.expand_dims(image, axis=-1), [32,32]).numpy()
+
+                # repeat grayscale images along all three channels
+                oodX[i, :, :, 0] = reshaped_image[:,:,0]
+                oodX[i, :, :, 1] = reshaped_image[:,:,0]
+                oodX[i, :, :, 2] = reshaped_image[:,:,0]
+                oodY[i] = elem['label']
+                wrongShapeIndices.append(i)
+                continue
+            image = tf.cast(elem['image'], tf.float32)/255.
+            oodX[i,:,:,:] = tf.image.resize(tf.cast(elem['image'], tf.float32)/255., [32,32]).numpy()
+            oodY[i] = elem['label']
+            count += 1
+
+    score = []
+    temps = []
     for i in range(n_runs):
-        score = []
         # initialize model
         if(test_model == "resnet"):
             # Resnet 18 - modify stages for other architecture
@@ -165,6 +213,43 @@ if(__name__ == "__main__"):
         model.load_weights(model_path).expect_partial()
         # model.load_weights(ckpt_path).expect_partial()
         # model.load_weights('trained_models/full_models_afterTraining/training_resnet_SN_cifar10_n_run_1/cp.ckpt').expect_partial()
+
+        if(temperature_scaling):
+            # perform temperature scaling to calibrate network
+            temp_step = 0.1
+            num_temps = 100
+            T = 0.1
+            opt_temp = T
+            # opt_ece = 1e+03
+            opt_nll = 1e7
+            opt_ece = 1e7
+
+            for i in range(num_temps):
+                temp_logits = model.predict(valX, batch_size=batch_size)/T
+                if(temp_criterion == 'ece'):
+                    ece_temp = 100*tfp.stats.expected_calibration_error(num_bins = 10, logits=temp_logits, labels_true=valY)
+                    if(ece_temp < opt_ece):
+                        opt_ece = ece_temp
+                        opt_temp = T
+                elif(temp_criterion == 'nll'):
+                    nll_temp = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=valY, logits=temp_logits)).numpy()
+                    # print("NLL: ", nll_temp)
+                    if(nll_temp < opt_nll):
+                        opt_nll = nll_temp
+                        opt_temp = T
+                else: 
+                    nll_temp = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=valY, logits=temp_logits)).numpy()
+                    # print("NLL: ", nll_temp)
+                    if(nll_temp < opt_nll):
+                        opt_nll = nll_temp
+                        opt_temp = T
+                # print("Temp: ", T)
+                T += temp_step
+            temp = opt_temp
+            temps.append(temp)
+            print("Optimal Temperature: %f with optimal NLL: %f"%(temp, opt_nll))
+            
+
         if(test == "accuracy"):
             # load weights from i-th training run
             # checkpoints to save weights of the model
@@ -177,7 +262,7 @@ if(__name__ == "__main__"):
         elif(test == "ece"):
             # caluclate expected calibration error on test set
             logits = model.predict(testX, batch_size=batch_size)
-            ece = tfp.stats.expected_calibration_error(num_bins = 10, logits=logits, labels_true=testY)
+            ece = tfp.stats.expected_calibration_error(num_bins = 10, logits=logits/temp, labels_true=testY)
             score.append(ece*100)
         elif(test=="ood"):
             # logits_in = model.predict(trainX, batch_size=batch_size)
@@ -191,8 +276,8 @@ if(__name__ == "__main__"):
                     labels = np.concatenate([labels_in, labels_out], axis=0)
                     logits_in = model.predict(testX, batch_size=batch_size) 
                     logits_out = model.predict(oodX, batch_size=batch_size) # TODO: change to ood data
-                    aleatoric_out, epistemic_out = resnet_uncertainty(logits_out, mode=uncertainty)
-                    aleatoric_in, epistemic_in = resnet_uncertainty(logits_in, mode=uncertainty)
+                    aleatoric_out, epistemic_out = resnet_uncertainty(logits_out/temp, mode=uncertainty)
+                    aleatoric_in, epistemic_in = resnet_uncertainty(logits_in/temp, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
                     # print(epistemic)
@@ -203,44 +288,36 @@ if(__name__ == "__main__"):
                     labels_out = np.ones(np.shape(oodY))
                     labels = np.concatenate([labels_in, labels_out], axis=0)
                     logits_in = model.predict(testX, batch_size=batch_size)
-                    logits_out = model.predict(oodX, batch_size=batch_size) # TODO: change to ood data
-                    aleatoric_out, epistemic_out = resnet_uncertainty(logits_out, mode=uncertainty)
-                    aleatoric_in, epistemic_in = resnet_uncertainty(logits_in, mode=uncertainty)
+                    logits_out = model.predict(oodX, batch_size=batch_size) 
+                    aleatoric_out, epistemic_out = resnet_uncertainty(logits_out/temp, mode=uncertainty)
+                    aleatoric_in, epistemic_in = resnet_uncertainty(logits_in/temp, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
                     score.append(auroc*100)
                 elif(uncertainty == 'DDU'):
                     # define labels for in-distribution and out-of-distribution data
                     labels_in = np.ones(np.shape(testY)) # define in-distribution data as ones - DDU estimates probability of being in-distribution data
-                    labels_out = np.zeros(np.shape(testY)) # TODO: change to ood dataset
+                    labels_out = np.zeros(np.shape(oodY)) 
                     labels = np.concatenate([labels_in, labels_out], axis=0)
-                    probs_in = softmax(model.predict(testX, batch_size=batch_size))
-                    probs_out = softmax(model.predict(oodX, batch_size=batch_size)) 
+                    probs_in = softmax(model.predict(testX, batch_size=batch_size)/temp, axis=-1)
+                    probs_out = softmax(model.predict(oodX, batch_size=batch_size)/temp, axis=-1) 
                     # map training samples to feature space to fit estimator
                     train_features = encoder.predict(trainX, batch_size=batch_size) 
                     # print("Test y: ", np.unique(testY))
 
-
-                    # remove class 4 and 6 to avoid feature collapse - TODO: remove for actual testing!!
-                    train_features = np.delete(train_features, np.where(testY==4), axis=0)
-                    testY = np.delete(testY, np.where(testY==4), axis=0)
-                    train_features = np.delete(train_features, np.where(testY==6), axis=0)
-                    testY = np.delete(testY, np.where(testY==6), axis=0)
-
-                    ddu = DDU(train_features, testY) # TODO: change to trainY
+                    ddu = DDU(train_features, trainY) 
                     
                     # predict uncertainty on in-distribution and out-of-distribution data
                     features_in = encoder.predict(testX)
                     featoures_out = encoder.predict(oodX)
                     aleatoric_in, epistemic_in = ddu.predict(features_in,probs_in)
                     aleatoric_out, epistemic_out = ddu.predict(featoures_out, probs_out)
-                    epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
+                    epistemic = np.concatenate([-epistemic_in, -epistemic_out], axis=0)
 
                     # calculate auroc score
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic) 
 
                     # print("Epistemic: ", epistemic)
-
 
                     # append auroc score to list
                     score.append(auroc*100)
@@ -251,9 +328,9 @@ if(__name__ == "__main__"):
                     labels_out = np.ones(np.shape(oodY))
                     labels = np.concatenate([labels_in, labels_out], axis=0)
                     logits_in = model.predict(testX, batch_size=batch_size) 
-                    logits_out = model.predict(oodX, batch_size=batch_size) # TODO: change to ood data
-                    aleatoric_out, epistemic_out = wrn_uncertainty(logits_out, mode=uncertainty)
-                    aleatoric_in, epistemic_in = wrn_uncertainty(logits_in, mode=uncertainty)
+                    logits_out = model.predict(oodX, batch_size=batch_size) 
+                    aleatoric_out, epistemic_out = wrn_uncertainty(logits_out/temp, mode=uncertainty)
+                    aleatoric_in, epistemic_in = wrn_uncertainty(logits_in/temp, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
                 elif(uncertainty == 'energy'):
@@ -261,9 +338,9 @@ if(__name__ == "__main__"):
                     labels_out = np.ones(np.shape(oodY))
                     labels = np.concatenate([labels_in, labels_out], axis=0)
                     logits_in = model.predict(testX, batch_size=batch_size)
-                    logits_out = model.predict(oodX, batch_size=batch_size) # TODO: change to ood data
-                    aleatoric_out, epistemic_out = wrn_uncertainty(logits_out, mode=uncertainty)
-                    aleatoric_in, epistemic_in = wrn_uncertainty(logits_in, mode=uncertainty)
+                    logits_out = model.predict(oodX, batch_size=batch_size)
+                    aleatoric_out, epistemic_out = wrn_uncertainty(logits_out/temp, mode=uncertainty)
+                    aleatoric_in, epistemic_in = wrn_uncertainty(logits_in/temp, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
                 elif(uncertainty == 'DDU'):
@@ -271,29 +348,21 @@ if(__name__ == "__main__"):
                     labels_in = np.ones(np.shape(testY))
                     labels_out = np.zeros(np.shape(oodY)) 
                     labels = np.concatenate([labels_in, labels_out], axis=0)
-                    probs_in = softmax(model.predict(testX, batch_size=batch_size))
-                    probs_out = softmax(model.predict(oodX, batch_size=batch_size))
+                    probs_in = softmax(model.predict(testX, batch_size=batch_size)/temp, axis=-1)
+                    probs_out = softmax(model.predict(oodX, batch_size=batch_size)/temp, axis=-1)
 
                     # map training samples to feature space to fit estimator
 
-                    train_features = encoder.predict(trainX, batch_size=batch_size) # TODO: change to trainX
+                    train_features = encoder.predict(trainX, batch_size=batch_size)
                     # print("Test y: ", np.unique(testY))
 
-
-                    # remove class 4 and 6 to avoid feature collapse - TODO: remove for actual testing!!
-                    train_features = np.delete(train_features, np.where(testY==4), axis=0)
-                    testY = np.delete(testY, np.where(testY==4), axis=0)
-                    train_features = np.delete(train_features, np.where(testY==6), axis=0)
-                    testY = np.delete(testY, np.where(testY==6), axis=0)
-
-                    ddu = DDU(train_features, testY) # TODO: change to trainY
-                    
+                    ddu = DDU(train_features, trainY)                    
                     # predict uncertainty on in-distribution and out-of-distribution data
                     features_in = encoder.predict(testX)
                     featoures_out = encoder.predict(oodX)
                     aleatoric_in, epistemic_in = ddu.predict(features_in,probs_in)
                     aleatoric_out, epistemic_out = ddu.predict(featoures_out, probs_out)
-                    epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
+                    epistemic = np.concatenate([-epistemic_in, -epistemic_out], axis=0)
 
                     # calculate auroc score
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic) 
@@ -302,4 +371,7 @@ if(__name__ == "__main__"):
 
                     # append auroc score to list
                     score.append(auroc*100)
+
     print("Mean score %s:  %f" %(test,np.mean(score)))
+    print("Std score %s: %f" % (test, np.std(score)))
+
