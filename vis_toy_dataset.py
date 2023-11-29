@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.special import softmax
 from scipy.stats import entropy 
 from uncertainty import DDU
-from sklearn.manifold import Isomap
+from sklearn.manifold import Isomap, TSNE
 from sklearn.decomposition import PCA
 from matplotlib.colors import ListedColormap
 
@@ -40,7 +40,7 @@ def visualize_predictions(X, y, model,encoder, min=-2.0, max=2.0, res=200, num_n
     N, M = len(xs), len(ys)
     xy = np.asarray([(_x,_y) for _x in xs for _y in ys])
     num_samples = xy.shape[0]
-    print("NUm samples: ", num_samples)
+    print("Num samples: ", num_samples)
     # predictions =  [batched_predict(params, xy)[1] for params in params_list]
     predictions = model.predict(xy)
     # predictions_ensemble = np.mean(predictions, axis=0)
