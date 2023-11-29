@@ -15,6 +15,12 @@ def one_hot_enc(y, K):
     # y_one_hot = np.zeros(np.shape(y)[0], K)
     return np.array(y[:, None] == np.arange(K))
 
+def ood_data(num_samples = 200):
+    X = np.zeros((num_samples, 2))
+    X[:,0] = np.random.uniform(low=-1.5, high=-1.0, size=(num_samples,))
+    X[:,1] = np.random.uniform(low=1.0, high=1.5, size=(num_samples,))
+    return X
+
 def generate_datasets(N,K,noise):
     """
     Function for creating datasets, taken and modified from practical
@@ -54,12 +60,12 @@ def visualize_predictions(X, y, model,encoder, min=-2.0, max=2.0, res=200, num_n
     print("Shape predictions: ", np.shape(predictions))
     Z[indices] =np.argmax(softmax(predictions, axis=1), axis=1)
 
-
+    X_ood = ood_data()
     if(mode=='ddu'):
         features_train = encoder.predict(X)
         print("Features shape: ", np.shape(features_train))
-        isomap = Isomap(n_components=2)
-        features_project = isomap.fit_transform(features_train)
+        tsne = TSNE(n_components=2)
+        features_project = tsne.fit_transform(features_train)
         plt.scatter(features_project[:, 0], features_project[:, 1], c=y)
         plt.show()
         ddu = DDU(features_train, y)
@@ -102,19 +108,35 @@ def visualize_single_uncertainty(X, y, model,encoder, min=-2.0, max=2.0, res=200
     Z = np.zeros((N,M))
 
     indices = np.unravel_index(np.arange(num_samples), (N,M))
+    X_ood = ood_data()
 
     if(mode=='ddu'):
         features_train = encoder.predict(X)
         print("Features shape: ", np.shape(features_train))
         ddu = DDU(features_train, y)
         features_xy = encoder.predict(xy)
+        features_ood = encoder.predict(X_ood)
+        print("Features ood: ", np.shape(features_ood))
         # project to lower dimensions
-        pca = PCA(n_components=2)
-        features_train_projected = pca.fit_transform(features_train)
-        plt.scatter(features_train_projected[:, 0], features_train_projected[:,1], c=y, s=10, alpha =0.3,
-                    cmap=ListedColormap(['orange', 'blue', 'green']))
+        pca = TSNE(n_components=2)
+        features_all = np.concatenate([features_train, features_ood], axis=0)
+        print("Features_all: ", np.shape(features_all))
+        y_ood = 3*np.ones((np.shape(X_ood)[0], ), dtype='uint8')
+        y_all = np.concatenate([y, y_ood], axis=0)
+        print("y_all: ", np.shape(y_all))
+
+        features_all_projected = pca.fit_transform(features_all)
+
+        plt.scatter(features_all_projected[:, 0], features_all_projected[:,1], c=y_all, s=10, alpha =0.3,
+                    cmap=ListedColormap(['orange', 'blue', 'green', 'red']))
+        # plt.scatter(features_all_projected[:, 0], features_all_projected[:,1], c=y_all, s=10, alpha =0.3,
+        #             cmap=ListedColormap(['orange', 'blue', 'green']))
+        
+        # features_ood_projected = pca.fit_transform(features_ood)
+        # plt.scatter(features_ood_projected[:,0], features_ood_projected[:,1], c='red', s=10, alpha=0.3)
         aleatoric, epistemic = ddu.predict(features_xy, softmax(predictions, axis=1))
         log_density = -epistemic
+        
 
         _, train_epistemic = ddu.predict(features_train, softmax(model.predict(X), axis=1))
         log_train_density = -train_epistemic
@@ -132,6 +154,7 @@ def visualize_single_uncertainty(X, y, model,encoder, min=-2.0, max=2.0, res=200
     fig, ax = plt.subplots(1,1)
     ax.contourf(xs, ys, Z.T,levels=50, cmap='cividis')
     ax.scatter(X[:, 0], X[:, 1], c=y, s=10, alpha = 0.3, cmap=ListedColormap(['orange', 'blue', 'green']))#cmap=plt.cm.Spectral, alpha =0.7)
+    ax.scatter(X_ood[:,0], X_ood[:, 1], c='red', s=10, alpha = 0.3)
     plt.show()
 
 def visualize_ensemble_uncertainty(X, y, models, min=-2.0, max=2.0, res=200, num_nets=1, mode='softmax'):
@@ -177,7 +200,7 @@ if(__name__=="__main__"):
     # print("Training y:", y.shape)
 
     # train models
-    model, encoder = fc_net(in_shape=(2,), num_classes=3)
+    model, encoder = fc_resnet(in_shape=(2,), num_classes=3)
     # print("X shape: ", np.shape(X))
     # logits = model(X[0:10])
     # print("Logits: ", logits)
