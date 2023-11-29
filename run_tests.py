@@ -33,7 +33,7 @@ parser.add_argument("--batch_size", default=128, type=int)
 parser.add_argument("--test", default = "accuracy", type=str) # 'accuracy', 'ece', 'ood'
 parser.add_argument("--n_runs", default = 5, type=int) # number of training runs to average over
 parser.add_argument("--uncertainty", default='DDU', type=str) # 'DDU', 'energy', 'softmax'
-parser.add_argument("--temperature_scaling", default=True, type=bool)
+parser.add_argument("--temperature_scaling", default=False, type=bool)
 parser.add_argument("--temperature", default = 1.0, type=float)
 parser.add_argument("--temperature_criterion", default='ece', type=str)
 
@@ -248,6 +248,8 @@ if(__name__ == "__main__"):
             temp = opt_temp
             temps.append(temp)
             print("Optimal Temperature: %f with optimal NLL: %f"%(temp, opt_nll))
+        else:
+            temp = 1.0
             
 
         if(test == "accuracy"):
