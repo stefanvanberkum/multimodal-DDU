@@ -32,7 +32,7 @@ parser.add_argument("--ablate", default=False, action=argparse.BooleanOptionalAc
 parser.add_argument("--batch_size", default=128, type=int)
 parser.add_argument("--test", default = "accuracy", type=str) # 'accuracy', 'ece', 'ood'
 parser.add_argument("--n_runs", default = 5, type=int) # number of training runs to average over
-parser.add_argument("--uncertainty", default='DDU', type=str) # 'DDU', 'energy', 'softmax'
+parser.add_argument("--uncertainty", default='DDU', type=str) # 'energy', 'softmax', 'DDU', 'KD', 'CWKD', 'VI'
 parser.add_argument("--temperature_scaling", default=True, type=bool)
 parser.add_argument("--temperature", default = 1.0, type=float)
 parser.add_argument("--temperature_criterion", default='ece', type=str)
@@ -294,7 +294,7 @@ if(__name__ == "__main__"):
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
                     score.append(auroc*100)
-                elif(uncertainty == 'DDU'):
+                elif uncertainty == 'DDU' or uncertainty == 'KD' or uncertainty == 'CWKD' or uncertainty == 'VI':
                     # define labels for in-distribution and out-of-distribution data
                     labels_in = np.ones(np.shape(testY)) # define in-distribution data as ones - DDU estimates probability of being in-distribution data
                     labels_out = np.zeros(np.shape(oodY)) 
@@ -305,7 +305,14 @@ if(__name__ == "__main__"):
                     train_features = encoder.predict(trainX, batch_size=batch_size) 
                     # print("Test y: ", np.unique(testY))
 
-                    ddu = DDU(train_features, trainY) 
+                    if uncertainty == 'DDU':
+                        ddu = DDU(train_features, trainY)
+                    elif uncertainty == 'KD':
+                        ddu = DDU_KD(train_features)
+                    elif uncertainty == 'CWKD':
+                        ddu = DDU_CWKD(train_features, trainY)
+                    elif uncertainty == 'VI':
+                        ddu = DDU_VI(train_features, 10 * n_classes)
                     
                     # predict uncertainty on in-distribution and out-of-distribution data
                     features_in = encoder.predict(testX)
@@ -343,7 +350,7 @@ if(__name__ == "__main__"):
                     aleatoric_in, epistemic_in = wrn_uncertainty(logits_in/temp, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
-                elif(uncertainty == 'DDU'):
+                elif uncertainty == 'DDU' or uncertainty == 'KD' or uncertainty == 'CWKD' or uncertainty == 'VI':
                     # define labels for in-distribution and out-of-distribution data
                     labels_in = np.ones(np.shape(testY))
                     labels_out = np.zeros(np.shape(oodY)) 
@@ -356,7 +363,15 @@ if(__name__ == "__main__"):
                     train_features = encoder.predict(trainX, batch_size=batch_size)
                     # print("Test y: ", np.unique(testY))
 
-                    ddu = DDU(train_features, trainY)                    
+                    if uncertainty == 'DDU':
+                        ddu = DDU(train_features, trainY)
+                    elif uncertainty == 'KD':
+                        ddu = DDU_KD(train_features)
+                    elif uncertainty == 'CWKD':
+                        ddu = DDU_CWKD(train_features, trainY)
+                    elif uncertainty == 'VI':
+                        ddu = DDU_VI(train_features, 10 * n_classes)
+
                     # predict uncertainty on in-distribution and out-of-distribution data
                     features_in = encoder.predict(testX)
                     featoures_out = encoder.predict(oodX)

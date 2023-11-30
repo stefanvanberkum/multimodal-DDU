@@ -112,7 +112,7 @@ class DDU_CWKD:
 
             # Compute mixture component.
             subset = z[y == c, :]
-            self.components[c] = KernelDensity.fit(subset)
+            self.components[c] = KernelDensity().fit(subset)
 
     def predict(self, z, p):
         """Predict uncertainty for one sample.
@@ -129,7 +129,7 @@ class DDU_CWKD:
         n_obs = len(z)
         log_probs = np.zeros((n_obs, self.n_class))
         for i in range(n_obs):
-            sample = z[i, :]
+            sample = np.expand_dims(z[i, :], axis=0)
 
             for j in range(self.n_class):
                 c = self.classes[j]
