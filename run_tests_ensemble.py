@@ -8,6 +8,8 @@ to replicate Table 1.
 - Datasets: CiFAR-10, CIFAR-100, SVHN, Tiny-ImageNet
 """
 
+import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import numpy as np 
@@ -25,9 +27,9 @@ import datasets
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", required=True, type=str) #'wrn-ensemble', 'resnet-ensemble'
 parser.add_argument("--train_ds", required=True, type=str) # 'cifar10', 'cifar100'
-parser.add_argument("--test_ds", required=True, type=str) # 'cifar100', 'SVHN', 'imageNet'
-parser.add_argument("--modBlock", default=True, type=bool)
-parser.add_argument("--ablate", default=False, type=bool)
+parser.add_argument("--test_ds", required=True, type=str) # 'cifar100', 'svhn', 'imageNet'
+parser.add_argument("--modBlock", default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument("--ablate", default=False, action=argparse.BooleanOptionalAction)
 # parser.add_argument("--n_epochs", default=350, type=int)
 parser.add_argument("--batch_size", default=128, type=int)
 parser.add_argument("--test", default = "accuracy", type=str) # 'accuracy', 'ece', 'ood'
@@ -140,8 +142,8 @@ if(__name__ == "__main__"):
             oodY[i] = elem['label']
             count += 1
 
+    score = []
     for i in range(n_runs):
-        score = []
         # initialize models
         if(test_model == "wrn-ensemble"):
             model_ensemble = ensemble_wrn(n_members, N=4, in_shape=(32,32,3), k=3, n_out=n_classes,
@@ -177,29 +179,29 @@ if(__name__ == "__main__"):
                 else:
                     model_path = 'trained_models/full_models_afterTraining/training_'+test_model+"_"+train_ds+"_n_run_"+str(i+1)+"_member_"+str(j+1)+"/cp.ckpt"
 
-            # member.load_weights(model_path).expect_partial()
+            member.load_weights(model_path).expect_partial()
         # model.load_weights(ckpt_path).expect_partial()
         # model.load_weights('trained_models/full_models_afterTraining/training_resnet_SN_cifar10_n_run_1/cp.ckpt').expect_partial()
         if(test == "accuracy"):
             # Majority vote over ensemble predictions
             # evaluate accuracy on test_ds
-            predictions = [member.predict(testX, batch_size=batch_size) for member in model_ensemble]
+            predictions = [member.predict(testX, batch_size=batch_size, verbose=0) for member in model_ensemble]
             ensemble_predictions = np.argmax(softmax(predictions, axis=-1), axis=-1)
             label_prediction = [np.argmax(np.bincount(pred)) for pred in ensemble_predictions.T]
             acc = np.mean([1.0 if pred==testY[id] else 0.0 for id, pred in enumerate(label_prediction)])
             score.append(acc)
         elif(test == "ece"):
             # TODO: Check if mean logits is right way to evaluate ece for ensemble
-            logits = [member.predict(testX, batch_size=batch_size) for member in model_ensemble]
+            logits = [member.predict(testX, batch_size=batch_size, verbose=0) for member in model_ensemble]
             mean_logits = np.mean(logits, axis=0)
             ece = tfp.stats.expected_calibration_error(num_bins = 10, logits=mean_logits, labels_true=testY)
             score.append(ece*100)
         elif(test == "ood"):
             if(uncertainty=='entropy'):
-                logits_in = [member.predict(testX, batch_size=batch_size) for member in model_ensemble]
-                logits_out = [member.predict(oodX, batch_size=batch_size) for member in model_ensemble]
-                labels_in = np.ones(np.shape(testY)) # define in-distribution data as ones - DDU estimates probability of being in-distribution data
-                labels_out = np.zeros(np.shape(oodY))
+                logits_in = [member.predict(testX, batch_size=batch_size, verbose=0) for member in model_ensemble]
+                logits_out = [member.predict(oodX, batch_size=batch_size, verbose=0) for member in model_ensemble]
+                labels_in = np.zeros(np.shape(testY)) # define in-distribution data as ones - DDU estimates probability of being in-distribution data
+                labels_out = np.ones(np.shape(oodY))
 
                 aleatoric_in, epistemic_in = ensemble_uncertainty(logits_in, mode=uncertainty)
                 aleatoric_out, epistemic_out = ensemble_uncertainty(logits_out, mode=uncertainty)
@@ -212,10 +214,10 @@ if(__name__ == "__main__"):
                 score.append(auroc*100)
 
             elif(uncertainty=='mi'):
-                logits_in = [member.predict(testX, batch_size=batch_size) for member in model_ensemble]
-                logits_out = [member.predict(oodX, batch_size=batch_size) for member in model_ensemble]
-                labels_in = np.ones(np.shape(testY)) # define in-distribution data as ones - DDU estimates probability of being in-distribution data
-                labels_out = np.zeros(np.shape(oodY))
+                logits_in = [member.predict(testX, batch_size=batch_size, verbose=0) for member in model_ensemble]
+                logits_out = [member.predict(oodX, batch_size=batch_size, verbose=0) for member in model_ensemble]
+                labels_in = np.zeros(np.shape(testY)) # define in-distribution data as ones - DDU estimates probability of being in-distribution data
+                labels_out = np.ones(np.shape(oodY))
 
                 aleatoric_in, epistemic_in = ensemble_uncertainty(logits_in, mode=uncertainty)
                 aleatoric_out, epistemic_out = ensemble_uncertainty(logits_out, mode=uncertainty)
@@ -228,4 +230,4 @@ if(__name__ == "__main__"):
                 score.append(auroc*100)
 
     print("Mean score %s:  %f" %(test,np.mean(score)))
-    print("Var score %s: %f" % (test,np.var(score)))
+    print("Std score %s: %f" % (test,np.std(score)))
