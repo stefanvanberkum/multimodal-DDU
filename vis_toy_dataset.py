@@ -5,7 +5,7 @@ from vis_models import fc_net, fc_resnet, fc_ensemble
 import matplotlib.pyplot as plt
 from scipy.special import softmax
 from scipy.stats import entropy 
-from uncertainty import DDU
+from uncertainty import DDU, DDU_KD, DDU_CWKD, DDU_VI
 from sklearn.manifold import Isomap, TSNE
 from sklearn.decomposition import PCA
 from matplotlib.colors import ListedColormap
@@ -103,10 +103,19 @@ def visualize_single_uncertainty(X, y, model,encoder, min=-2.0, max=2.0, res=200
 
     indices = np.unravel_index(np.arange(num_samples), (N,M))
 
-    if(mode=='ddu'):
+    if mode == 'ddu' or mode == 'kd' or mode == 'cwkd' or mode == 'vi':
         features_train = encoder.predict(X)
         print("Features shape: ", np.shape(features_train))
-        ddu = DDU(features_train, y)
+        if mode == 'ddu':
+            ddu = DDU(features_train, y)
+        elif mode == 'kd':
+            ddu = DDU_KD(features_train)
+        elif mode == 'cwkd':
+            ddu = DDU_CWKD(features_train, y)
+        elif mode == 'vi':
+            ddu = DDU_VI(features_train, 30)
+        else:
+            raise NotImplementedError("Invalid mode: " + mode)
         features_xy = encoder.predict(xy)
         # project to lower dimensions
         pca = PCA(n_components=2)
@@ -132,6 +141,7 @@ def visualize_single_uncertainty(X, y, model,encoder, min=-2.0, max=2.0, res=200
     fig, ax = plt.subplots(1,1)
     ax.contourf(xs, ys, Z.T,levels=50, cmap='cividis')
     ax.scatter(X[:, 0], X[:, 1], c=y, s=10, alpha = 0.3, cmap=ListedColormap(['orange', 'blue', 'green']))#cmap=plt.cm.Spectral, alpha =0.7)
+    ax.set_title(mode)
     plt.show()
 
 def visualize_ensemble_uncertainty(X, y, models, min=-2.0, max=2.0, res=200, num_nets=1, mode='softmax'):
@@ -207,4 +217,7 @@ if(__name__=="__main__"):
     
     # visualize uncertainty
     visualize_single_uncertainty(X, y, model, encoder, mode='ddu')
+    visualize_single_uncertainty(X, y, model, encoder, mode='kd')
+    visualize_single_uncertainty(X, y, model, encoder, mode='cwkd')
+    visualize_single_uncertainty(X, y, model, encoder, mode='vi')
     # visualize_ensemble_uncertainty(X,y,models, mode='dd')
