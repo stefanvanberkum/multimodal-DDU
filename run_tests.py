@@ -374,9 +374,16 @@ if(__name__ == "__main__"):
 
                     # predict uncertainty on in-distribution and out-of-distribution data
                     features_in = encoder.predict(testX)
-                    featoures_out = encoder.predict(oodX)
+                    features_out = encoder.predict(oodX)
+
                     aleatoric_in, epistemic_in = ddu.predict(features_in,probs_in)
-                    aleatoric_out, epistemic_out = ddu.predict(featoures_out, probs_out)
+                    epistemic_in[epistemic_in == np.inf] = np.finfo(np.float32).max
+                    epistemic_in[epistemic_in == -np.inf] = np.finfo(np.float32).min
+
+                    aleatoric_out, epistemic_out = ddu.predict(features_out, probs_out)
+                    epistemic_out[epistemic_out == np.inf] = np.finfo(np.float32).max
+                    epistemic_out[epistemic_out == -np.inf] = np.finfo(np.float32).min
+
                     epistemic = np.concatenate([-epistemic_in, -epistemic_out], axis=0)
 
                     # calculate auroc score
