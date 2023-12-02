@@ -28,7 +28,7 @@ def resnet_uncertainty(y, mode='softmax'):
         # aleatoric: softmax entropy, epistemic: unnormalized softmax density (logsumexp of logits)
         probs = softmax(y, axis=-1)
         aleatoric = entropy(probs, axis=-1)
-        epistemic = logsumexp(y, axis=-1)
+        epistemic = -logsumexp(y, axis=-1)
     else:
         aleatoric = 0
         epistemic = 0

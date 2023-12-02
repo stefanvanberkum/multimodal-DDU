@@ -188,7 +188,7 @@ def wrn_uncertainty(y, mode='softmax'):
     elif(mode=='energy'):
         # aleatoric: softmax entropy, epistemic: unnormalized softmax density (logsumexp of logits)
         aleatoric = entropy(probs, axis=-1)
-        epistemic = logsumexp(y, axis=-1)
+        epistemic = -logsumexp(y, axis=-1)
     else:
         aleatoric = 0
         epistemic = 0
