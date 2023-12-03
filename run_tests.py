@@ -335,6 +335,7 @@ if(__name__ == "__main__"):
                     aleatoric_in, epistemic_in = wrn_uncertainty(logits_in/temp, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
+                    score.append(auroc*100)
                 elif(uncertainty == 'energy'):
                     labels_in = np.zeros(np.shape(testY))
                     labels_out = np.ones(np.shape(oodY))
@@ -345,6 +346,7 @@ if(__name__ == "__main__"):
                     aleatoric_in, epistemic_in = wrn_uncertainty(logits_in/temp, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
+                    score.append(auroc*100)
                 elif(uncertainty == 'DDU'):
                     # define labels for in-distribution and out-of-distribution data
                     labels_in = np.ones(np.shape(testY))
