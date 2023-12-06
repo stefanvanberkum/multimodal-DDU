@@ -4,7 +4,7 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import numpy as np
-from WRN import WRN, wrn_uncertainty
+from WRN import WRN, wrn_uncertainty, WRN_with_augment
 from resNet import resnet, resnet_uncertainty
 from ensembles import ensemble_resnet, ensemble_uncertainty, ensemble_wrn
 import argparse
@@ -20,6 +20,8 @@ parser.add_argument("--ablate", default=False, action=argparse.BooleanOptionalAc
 parser.add_argument("--n_epochs", default=350, type=int)
 parser.add_argument("--batch_size", default=128, type=int)
 parser.add_argument("--n_run", required=True, type=int)
+parser.add_argument("--dropout", default = 0., type=float)
+parser.add_argument("--data_augment", default=False, action=argparse.BooleanOptionalAction)
 
 
 # # parameters for training
@@ -30,6 +32,10 @@ parser.add_argument("--n_run", required=True, type=int)
 # n_members = 5
 # batch_size = 128
 # n_epochs = 1
+
+# def augment_data(image_label, seed):
+#     image, label = image_label
+#     new_seed = 
 
 
 if(__name__=="__main__"):
@@ -42,6 +48,8 @@ if(__name__=="__main__"):
     batch_size = args.batch_size
     n_epochs = args.n_epochs
     n_run = args.n_run
+    dropout = args.dropout
+    data_augment = args.data_augment
 
     os.makedirs("trained_models", exist_ok=True)
 
@@ -60,11 +68,8 @@ if(__name__=="__main__"):
 
     elif(dataset == 'cifar100'):
         ds_train = tfds.load("cifar100", split='train')
-
-
         # batch training data
         # train_batches = ds_train.shuffle(100).batch(batch_size)
-
         ds_test = tfds.load("cifar100", split='test')
 
         # test_batches = ds_test.shuffle(100).batch(batch_size)
@@ -87,11 +92,13 @@ if(__name__=="__main__"):
     # initialize model
     if(train_model == "resnet"):
         # Resnet 18 - modify stages for other architecture
-        model, encoder = resnet(stages=[64,128,256,512],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes, modBlock = train_modBlock, ablate = train_ablate)
+        model, encoder = resnet(stages=[64,128,256,512],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes,dropout = dropout,modBlock = train_modBlock, ablate = train_ablate)
     elif(train_model == "wrn"):
         # Wide-Resnet 28-10 - modify for different architecture
-        model, encoder = WRN(N=4, in_shape=(32,32,3), k=3, n_out=n_classes, modBlock=train_modBlock,
-                             ablate = train_ablate)
+        if(data_augment):
+            model, encoder = WRN_with_augment(N=4, in_shape=(32,32,3), k=3, n_out=n_classes, dropout=dropout,data_augment=data_augment, modBlock=train_modBlock, ablate = train_ablate, batch_norm_momentum=0.01)
+        else:
+            model, encoder = WRN(N=4, in_shape=(32,32,3), k=3, n_out=n_classes, dropout=dropout, modBlock=train_modBlock, ablate = train_ablate)
     elif(train_model == "wrn-ensemble"):
         model = ensemble_wrn(n_members, N=4, in_shape=(32,32,3), k=3, n_out=n_classes, modBlock=train_modBlock,
                              ablate = train_ablate)
