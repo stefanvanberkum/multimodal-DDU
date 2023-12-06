@@ -17,7 +17,7 @@ from WRN import WRN, wrn_uncertainty
 from resNet import resnet, resnet_uncertainty
 from ensembles import ensemble_resnet, ensemble_wrn, ensemble_uncertainty
 from uncertainty import DDU, DDU_KD, DDU_CWKD, DDU_VI
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, roc_curve, precision_recall_curve, average_precision_score
 from scipy.special import softmax
 import datasets
 
@@ -32,7 +32,7 @@ parser.add_argument("--ablate", default=False, action=argparse.BooleanOptionalAc
 parser.add_argument("--batch_size", default=128, type=int)
 parser.add_argument("--test", default = "accuracy", type=str) # 'accuracy', 'ece', 'ood'
 parser.add_argument("--n_runs", default = 5, type=int) # number of training runs to average over
-parser.add_argument("--uncertainty", default='DDU', type=str) # 'DDU', 'energy', 'softmax'
+parser.add_argument("--uncertainty", default='DDU', type=str) # 'energy', 'softmax', 'DDU', 'KD', 'CWKD', 'VI'
 parser.add_argument("--temperature_scaling", default=False, type=bool)
 parser.add_argument("--temperature", default = 1.0, type=float)
 parser.add_argument("--temperature_criterion", default='ece', type=str)
@@ -52,7 +52,7 @@ if(__name__ == "__main__"):
     n_runs = args.n_runs
     uncertainty = args.uncertainty
     temperature_scaling = args.temperature_scaling
-    temp_scaling_split = 0.2
+    temp_scaling_split = 0.1
     temp = args.temperature
     temp_criterion = args.temperature_criterion
 
@@ -160,6 +160,16 @@ if(__name__ == "__main__"):
 
     score = []
     temps = []
+    # fp_rates = []
+    # tp_rates = []
+    # precisions = []
+    # recalls = []
+    auprc_scores = []
+    all_epistemics_in = []
+    all_epistemics_out = []
+    all_aleatorics_in = []
+    all_aleatorics_out = []
+
     for i in range(n_runs):
         # initialize model
         if(test_model == "resnet"):
@@ -248,8 +258,6 @@ if(__name__ == "__main__"):
             temp = opt_temp
             temps.append(temp)
             print("Optimal Temperature: %f with optimal NLL: %f"%(temp, opt_nll))
-        else:
-            temp = 1.0
             
 
         if(test == "accuracy"):
@@ -296,7 +304,7 @@ if(__name__ == "__main__"):
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
                     score.append(auroc*100)
-                elif(uncertainty == 'DDU'):
+                elif uncertainty == 'DDU' or uncertainty == 'KD' or uncertainty == 'CWKD' or uncertainty == 'VI':
                     # define labels for in-distribution and out-of-distribution data
                     labels_in = np.ones(np.shape(testY)) # define in-distribution data as ones - DDU estimates probability of being in-distribution data
                     labels_out = np.zeros(np.shape(oodY)) 
@@ -307,7 +315,14 @@ if(__name__ == "__main__"):
                     train_features = encoder.predict(trainX, batch_size=batch_size) 
                     # print("Test y: ", np.unique(testY))
 
-                    ddu = DDU(train_features, trainY) 
+                    if uncertainty == 'DDU':
+                        ddu = DDU(train_features, trainY)
+                    elif uncertainty == 'KD':
+                        ddu = DDU_KD(train_features)
+                    elif uncertainty == 'CWKD':
+                        ddu = DDU_CWKD(train_features, trainY)
+                    elif uncertainty == 'VI':
+                        ddu = DDU_VI(train_features, 10 * n_classes)
                     
                     # predict uncertainty on in-distribution and out-of-distribution data
                     features_in = encoder.predict(testX)
@@ -335,7 +350,6 @@ if(__name__ == "__main__"):
                     aleatoric_in, epistemic_in = wrn_uncertainty(logits_in/temp, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
-                    score.append(auroc*100)
                 elif(uncertainty == 'energy'):
                     labels_in = np.zeros(np.shape(testY))
                     labels_out = np.ones(np.shape(oodY))
@@ -346,8 +360,7 @@ if(__name__ == "__main__"):
                     aleatoric_in, epistemic_in = wrn_uncertainty(logits_in/temp, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
-                    score.append(auroc*100)
-                elif(uncertainty == 'DDU'):
+                elif uncertainty == 'DDU' or uncertainty == 'KD' or uncertainty == 'CWKD' or uncertainty == 'VI':
                     # define labels for in-distribution and out-of-distribution data
                     labels_in = np.ones(np.shape(testY))
                     labels_out = np.zeros(np.shape(oodY)) 
@@ -360,108 +373,107 @@ if(__name__ == "__main__"):
                     train_features = encoder.predict(trainX, batch_size=batch_size)
                     # print("Test y: ", np.unique(testY))
 
-                    ddu = DDU(train_features, trainY)                    
+                    if uncertainty == 'DDU':
+                        ddu = DDU(train_features, trainY)
+                    elif uncertainty == 'KD':
+                        ddu = DDU_KD(train_features)
+                    elif uncertainty == 'CWKD':
+                        ddu = DDU_CWKD(train_features, trainY)
+                    elif uncertainty == 'VI':
+                        ddu = DDU_VI(train_features, 10 * n_classes)
+
                     # predict uncertainty on in-distribution and out-of-distribution data
-                    features_in = encoder.predict(testX)
-                    featoures_out = encoder.predict(oodX)
+                    # print("Calculate features")
+                    features_in = encoder.predict(testX, batch_size=batch_size)
+                    features_out = encoder.predict(oodX, batch_size=batch_size)
+
                     aleatoric_in, epistemic_in = ddu.predict(features_in,probs_in)
-                    aleatoric_out, epistemic_out = ddu.predict(featoures_out, probs_out)
+                    epistemic_in[epistemic_in == np.inf] = np.finfo(np.float32).max
+                    epistemic_in[epistemic_in == -np.inf] = np.finfo(np.float32).min
+                    # print("Epistemic in: ", epistemic_in)
+                    aleatoric_out, epistemic_out = ddu.predict(features_out, probs_out)
+                    epistemic_out[epistemic_out == np.inf] = np.finfo(np.float32).max
+                    epistemic_out[epistemic_out == -np.inf] = np.finfo(np.float32).min
+                    # print("Epistemic out: ", epistemic_out)
+
                     epistemic = np.concatenate([-epistemic_in, -epistemic_out], axis=0)
 
                     # calculate auroc score
-                    auroc = roc_auc_score(y_true = labels, y_score=epistemic) 
+                    # print("Before aruoc!")
+                    # compute precision and recall for error analysis
+                    # fpr, tpr, thresholds = roc_curve(y_true=labels, y_score=epistemic)
+                    # precision, recall, pr_thresholds = precision_recall_curve(y_true=labels, probas_pred=epistemic) 
+                    auroc = roc_auc_score(y_true = labels, y_score=epistemic)
+                    print("After Auroc! Auroc is: %f" % auroc)
+                    auprc = average_precision_score(y_true = labels, y_score= epistemic)
+                    # print("Tpr: ", tpr)
+                    # print("Fpr: ", fpr)
+
 
                     # print("Epistemic: ", epistemic)
 
                     # append auroc score to list
                     score.append(auroc*100)
-                elif(uncertainty == 'DDU-KD'):
-                    # define labels for in-distribution and out-of-distribution data
+                    auprc_scores.append(auprc*100)
+                    # tp_rates.append(tpr)
+                    # fp_rates.append(fpr)
+                    # precisions.append(precision)
+                    # recalls.append(recall)
+
+                elif(uncertainty == 'plotDDU'):
                     labels_in = np.ones(np.shape(testY))
                     labels_out = np.zeros(np.shape(oodY)) 
                     labels = np.concatenate([labels_in, labels_out], axis=0)
                     probs_in = softmax(model.predict(testX, batch_size=batch_size)/temp, axis=-1)
                     probs_out = softmax(model.predict(oodX, batch_size=batch_size)/temp, axis=-1)
-
-                    # map training samples to feature space to fit estimator
-
                     train_features = encoder.predict(trainX, batch_size=batch_size)
-                    # print("Test y: ", np.unique(testY))
+                    features_in = encoder.predict(testX, batch_size=batch_size)
+                    features_out = encoder.predict(oodX, batch_size=batch_size)
 
-                    ddu = DDU_KD(train_features) # trainY)                    
-                    # predict uncertainty on in-distribution and out-of-distribution data
-                    features_in = encoder.predict(testX)
-                    featoures_out = encoder.predict(oodX)
+                    ddu = DDU(train_features, trainY)
+
                     aleatoric_in, epistemic_in = ddu.predict(features_in,probs_in)
-                    aleatoric_out, epistemic_out = ddu.predict(featoures_out, probs_out)
-                    epistemic = np.concatenate([-epistemic_in, -epistemic_out], axis=0)
+                    epistemic_in[epistemic_in == np.inf] = np.finfo(np.float32).max
+                    epistemic_in[epistemic_in == -np.inf] = np.finfo(np.float32).min
+                    # print("Epistemic in: ", epistemic_in)
+                    aleatoric_out, epistemic_out = ddu.predict(features_out, probs_out)
+                    epistemic_out[epistemic_out == np.inf] = np.finfo(np.float32).max
+                    epistemic_out[epistemic_out == -np.inf] = np.finfo(np.float32).min
 
-                    # calculate auroc score
-                    auroc = roc_auc_score(y_true = labels, y_score=epistemic) 
+                    # append to lists
+                    all_epistemics_in.append(epistemic_in)
+                    all_epistemics_out.append(epistemic_out)
+                    all_aleatorics_in.append(aleatoric_in)
+                    all_aleatorics_out.append(aleatoric_out)
 
-                    # print("Epistemic: ", epistemic)
 
-                    # append auroc score to list
-                    score.append(auroc*100)
 
-                elif(uncertainty == 'DDU-CWKD'):
-                    # define labels for in-distribution and out-of-distribution data
-                    labels_in = np.ones(np.shape(testY))
-                    labels_out = np.zeros(np.shape(oodY)) 
-                    labels = np.concatenate([labels_in, labels_out], axis=0)
-                    probs_in = softmax(model.predict(testX, batch_size=batch_size)/temp, axis=-1)
-                    probs_out = softmax(model.predict(oodX, batch_size=batch_size)/temp, axis=-1)
 
-                    # map training samples to feature space to fit estimator
+                    
 
-                    train_features = encoder.predict(trainX, batch_size=batch_size)
-                    # print("Test y: ", np.unique(testY))
-
-                    ddu = DDU_CWKD(train_features, trainY)                    
-                    # predict uncertainty on in-distribution and out-of-distribution data
-                    features_in = encoder.predict(testX)
-                    featoures_out = encoder.predict(oodX)
-                    aleatoric_in, epistemic_in = ddu.predict(features_in,probs_in)
-                    aleatoric_out, epistemic_out = ddu.predict(featoures_out, probs_out)
-                    epistemic = np.concatenate([-epistemic_in, -epistemic_out], axis=0)
-
-                    # calculate auroc score
-                    auroc = roc_auc_score(y_true = labels, y_score=epistemic) 
-
-                    # print("Epistemic: ", epistemic)
-
-                    # append auroc score to list
-                    score.append(auroc*100)
-
-                elif(uncertainty == 'DDU-VI'):
-                    # define labels for in-distribution and out-of-distribution data
-                    labels_in = np.ones(np.shape(testY))
-                    labels_out = np.zeros(np.shape(oodY)) 
-                    labels = np.concatenate([labels_in, labels_out], axis=0)
-                    probs_in = softmax(model.predict(testX, batch_size=batch_size)/temp, axis=-1)
-                    probs_out = softmax(model.predict(oodX, batch_size=batch_size)/temp, axis=-1)
-
-                    # map training samples to feature space to fit estimator
-
-                    train_features = encoder.predict(trainX, batch_size=batch_size)
-                    # print("Test y: ", np.unique(testY))
-
-                    ddu = DDU_VI(train_features, n_components=10*n_classes)                    
-                    # predict uncertainty on in-distribution and out-of-distribution data
-                    features_in = encoder.predict(testX)
-                    featoures_out = encoder.predict(oodX)
-                    aleatoric_in, epistemic_in = ddu.predict(features_in,probs_in)
-                    aleatoric_out, epistemic_out = ddu.predict(featoures_out, probs_out)
-                    epistemic = np.concatenate([-epistemic_in, -epistemic_out], axis=0)
-
-                    # calculate auroc score
-                    auroc = roc_auc_score(y_true = labels, y_score=epistemic) 
-
-                    # print("Epistemic: ", epistemic)
-
-                    # append auroc score to list
-                    score.append(auroc*100)
 
     print("Mean score %s:  %f" %(test,np.mean(score)))
     print("Std score %s: %f" % (test, np.std(score)))
+    if(auprc_scores):
+        print("Mean AUPRC-score:  %f" %(np.mean(auprc_scores)))
+        print("Std AUPRC-score: %f" % (np.std(auprc_scores)))
 
+    if(all_epistemics_in):
+        np.savez('/home/jacobbrandauer/densities_and_entropies/'+test_model+"_"+"SN"+"_"+train_ds+"_vs_"+test_ds+".npz", array1=all_epistemics_in, array2=all_epistemics_out, array3=all_aleatorics_in, array4=all_aleatorics_out)
+        print("Results saved to path: /home/jacobbrandauer/densities_and_entropies/"+test_model+"_"+"SN"+"_"+train_ds+"_vs_"+test_ds+".npz")
+
+    
+
+    # if(tp_rates): 
+    #     print("Mean TP-rate:  %f" %(np.mean(tp_rates)))
+    #     print("Std TP-rate: %f" % (np.std(tp_rates)))
+    # if(fp_rates): 
+    #     print("Mean FP-rate:  %f" %(np.mean(fp_rates)))
+    #     print("Std FP-rate: %f" % (np.std(fp_rates)))
+    # if(precisions):
+    #     print("Mean precisione:  %f" %(np.mean(precisions)))
+    #     print("Std precisions: %f" % (np.std(precisions)))
+    # if(recalls):
+    #     print("Mean recall:  %f" %(np.mean(recalls)))
+    #     print("Std recall: %f" % (np.std(recalls)))
+    
