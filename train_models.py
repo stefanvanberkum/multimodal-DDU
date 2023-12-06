@@ -22,6 +22,7 @@ parser.add_argument("--batch_size", default=128, type=int)
 parser.add_argument("--n_run", required=True, type=int)
 parser.add_argument("--dropout", default = 0., type=float)
 parser.add_argument("--data_augment", default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument("--batch_norm_momentum", default=0.99, type=float)
 
 
 # # parameters for training
@@ -50,6 +51,7 @@ if(__name__=="__main__"):
     n_run = args.n_run
     dropout = args.dropout
     data_augment = args.data_augment
+    batch_norm_momentum = args.batch_norm_momentum
 
     os.makedirs("trained_models", exist_ok=True)
 
@@ -96,7 +98,7 @@ if(__name__=="__main__"):
     elif(train_model == "wrn"):
         # Wide-Resnet 28-10 - modify for different architecture
         if(data_augment):
-            model, encoder = WRN_with_augment(N=4, in_shape=(32,32,3), k=3, n_out=n_classes, dropout=dropout,data_augment=data_augment, modBlock=train_modBlock, ablate = train_ablate, batch_norm_momentum=0.01)
+            model, encoder = WRN_with_augment(N=4, in_shape=(32,32,3), k=3, n_out=n_classes, dropout=dropout,data_augment=data_augment, modBlock=train_modBlock, ablate = train_ablate, batch_norm_momentum=batch_norm_momentum)
         else:
             model, encoder = WRN(N=4, in_shape=(32,32,3), k=3, n_out=n_classes, dropout=dropout, modBlock=train_modBlock, ablate = train_ablate)
     elif(train_model == "wrn-ensemble"):
