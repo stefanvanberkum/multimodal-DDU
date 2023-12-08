@@ -13,7 +13,7 @@ import tensorflow_datasets as tfds
 import numpy as np 
 import argparse
 import tensorflow_probability as tfp
-from WRN import WRN, wrn_uncertainty
+from WRN import WRN, wrn_uncertainty, WRN_with_augment
 from resNet import resnet, resnet_uncertainty
 from ensembles import ensemble_resnet, ensemble_wrn, ensemble_uncertainty
 from uncertainty import DDU, DDU_KD, DDU_CWKD, DDU_VI
@@ -36,6 +36,9 @@ parser.add_argument("--uncertainty", default='DDU', type=str) # 'energy', 'softm
 parser.add_argument("--temperature_scaling", default=False, type=bool)
 parser.add_argument("--temperature", default = 1.0, type=float)
 parser.add_argument("--temperature_criterion", default='ece', type=str)
+parser.add_argument("--data_augment", default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument("--batch_norm_momentum", default=0.99, type=float)
+parser.add_argument("--dropout", default=0.0, type=float)
 
 
 # load pre-trained models
@@ -55,6 +58,10 @@ if(__name__ == "__main__"):
     temp_scaling_split = 0.1
     temp = args.temperature
     temp_criterion = args.temperature_criterion
+    data_augment = args.data_augment
+    batch_norm_momentum = args.batch_norm_momentum
+    dropout = args.dropout
+
 
     if(train_ds == 'cifar10'):
         n_classes = 10
@@ -177,7 +184,10 @@ if(__name__ == "__main__"):
             model, encoder = resnet(stages=[64,128,256,512],N=2,in_filters=64, in_shape=(32,32,3), n_out = n_classes, modBlock = train_modBlock, ablate = train_ablate)
         elif(test_model == "wrn"):
             # Wide-Resnet 28-10 - modify for different architecture
-            model, encoder = WRN(N=4, in_shape=(32,32,3), k=3, n_out=n_classes, modBlock=train_modBlock,
+            if(data_augment):
+                model, encoder = WRN_with_augment(N=4, in_shape=(32,32,3), k=3, n_out=n_classes, dropout=dropout,data_augment=data_augment, modBlock=train_modBlock, ablate = train_ablate, batch_norm_momentum=batch_norm_momentum)
+            else:
+                model, encoder = WRN(N=4, in_shape=(32,32,3), k=3, n_out=n_classes, modBlock=train_modBlock,
                                  ablate = train_ablate)
         elif(test_model == "wrn-ensemble"):
             model, encoder = ensemble_wrn(n_members, N=4, in_shape=(32,32,3), k=3, n_out=n_classes,
