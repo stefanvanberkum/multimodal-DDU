@@ -33,7 +33,7 @@ parser.add_argument("--batch_size", default=128, type=int)
 parser.add_argument("--test", default = "accuracy", type=str) # 'accuracy', 'ece', 'ood'
 parser.add_argument("--n_runs", default = 5, type=int) # number of training runs to average over
 parser.add_argument("--uncertainty", default='DDU', type=str) # 'energy', 'softmax', 'DDU', 'KD', 'CWKD', 'VI'
-parser.add_argument("--temperature_scaling", default=False, type=bool)
+parser.add_argument("--temperature_scaling", default=False, action=argparse.BooleanOptionalAction)
 parser.add_argument("--temperature", default = 1.0, type=float)
 parser.add_argument("--temperature_criterion", default='ece', type=str)
 parser.add_argument("--data_augment", default=False, action=argparse.BooleanOptionalAction)
@@ -360,6 +360,7 @@ if(__name__ == "__main__"):
                     aleatoric_in, epistemic_in = wrn_uncertainty(logits_in/temp, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
+                    score.append(100*auroc)
                 elif(uncertainty == 'energy'):
                     labels_in = np.zeros(np.shape(testY))
                     labels_out = np.ones(np.shape(oodY))
@@ -370,6 +371,7 @@ if(__name__ == "__main__"):
                     aleatoric_in, epistemic_in = wrn_uncertainty(logits_in/temp, mode=uncertainty)
                     epistemic = np.concatenate([epistemic_in, epistemic_out], axis=0)
                     auroc = roc_auc_score(y_true = labels, y_score=epistemic)
+                    score.append(100*auroc)
                 elif uncertainty == 'DDU' or uncertainty == 'KD' or uncertainty == 'CWKD' or uncertainty == 'VI':
                     # define labels for in-distribution and out-of-distribution data
                     labels_in = np.ones(np.shape(testY))
@@ -455,11 +457,6 @@ if(__name__ == "__main__"):
                     all_epistemics_out.append(epistemic_out)
                     all_aleatorics_in.append(aleatoric_in)
                     all_aleatorics_out.append(aleatoric_out)
-
-
-
-
-                    
 
 
     print("Mean score %s:  %f" %(test,np.mean(score)))
