@@ -132,7 +132,7 @@ if(__name__=="__main__"):
         # initialize models
         if(train_model == "resnet"):
             # Resnet 18 - modify stages for other architecture
-            model, encoder = resnet(stages = [64,128,256,512], N = 2, in_filters = 64, in_shape = (28,28,1), n_out = n_classes, modBlock = train_modBlock, ablate = train_ablate)
+            model, encoder = resnet(stages = [64,128,256,512], N = 2, in_filters = 64, in_shape = (28,28,1), n_out = n_classes, modBlock = train_modBlock, ablate = train_ablate, coeff = 3)
         elif(train_model == "vgg_16"):
             #VGG 16
             model, encoder = vgg_16(in_shape = (28,28,1), stages=[64, 64, 128, 128, 256, 256, 256, 512, 512, 512, 512, 512, 512], kernel_size = (3,3), padding = "same", modBlock = train_modBlock, ablate = train_ablate, n_out = n_classes)
@@ -210,7 +210,7 @@ if(__name__=="__main__"):
         #Load weights 
         if(train_model == "resnet"):
             # Resnet 18 - modify stages for other architecture
-            model, encoder = resnet(stages=[64,128,256,512],N=2,in_filters=64, in_shape=(28,28,1), n_out = n_classes, modBlock = train_modBlock, ablate = train_ablate)
+            model, encoder = resnet(stages=[64,128,256,512],N=2,in_filters=64, in_shape=(28,28,1), n_out = n_classes, modBlock = train_modBlock, ablate = train_ablate, coeff = 3)
         elif(train_model == "vgg_16"):
             #VGG 16
             model, encoder = vgg_16(in_shape = (28,28,1), stages=[64, 64, 128, 128, 256, 256, 256, 512, 512, 512, 512, 512, 512], kernel_size = (3,3), padding = "same", modBlock = train_modBlock, ablate = train_ablate, n_out = n_classes)
@@ -632,6 +632,7 @@ for model in models:
         train_modBlock = True
         train_ablate = False
 
+    print("Training and calculating for model: ", train_model)
     #Train model
     mode = "train"
     create_fig_1(mode)
