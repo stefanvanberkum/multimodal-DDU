@@ -1,4 +1,5 @@
 """ Code for plotting densities in OoD-detection """
+
 import matplotlib.pyplot as plt
 import seaborn as sb
 import numpy as np
@@ -27,32 +28,16 @@ aleatorics_out_mean = np.mean(all_aleatorics_out, axis=0)
 sb.set()
 plt.figure(dpi=500)
             
-# train_models = [results_1, results_2, results_3]
-# model_names = ["LeNet", "VGG16", "ResNet18"]
 
-#create subplots for LeNet, VGG16, and ResNet18
-# fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize = (18, 6))
 
 # fig, ax = plt.subplot(111)
 # combined_data = np.concatenate((train_model_result.log_gmm_density_mnist, train_model_result.log_gmm_density_ambiguous_mnist))
 sb.histplot(data = -epistemics_in_mean, stat=stat, bins = bin_num, label = "iD (Cifar10)", binrange=[-400,400], alpha = alpha, element = "step", edgecolor = "k", color = "dodgerblue")
 sb.histplot(data = -epistemics_out_mean, stat=stat, bins = bin_num, label =  "OoD (tiny-ImageNet)",binrange=[-400,400], alpha = alpha, element = "step",edgecolor = "k", color = "darkorange")
 
-# plt.set_xlabel("Density")
-# plt.set_ylabel("Fraction")
 
 legend_1 = plt.legend(loc = "upper left")
-# # legend_2 = ax2.legend(loc = "upper left")
-# # legend_3 = ax3.legend(loc = "upper left")
-        
-# legend_1.get_texts()[1].set_text('Dirty Mnist')
-# legend_1.get_texts()[0].set_text('Ambiguous Mnist')
 
-# legend_2.get_texts()[1].set_text('Dirty Mnist')
-# legend_2.get_texts()[0].set_text('Ambiguous Mnist')
-
-# legend_3.get_texts()[1].set_text('Dirty Mnist')
-# legend_3.get_texts()[0].set_text('Ambiguous Mnist')
 
 #save figure
 plt.savefig("density_cifar10_vs_imageNet")

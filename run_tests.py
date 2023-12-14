@@ -6,6 +6,7 @@ Script for running the tests described in the paper
 to replicate Table 1.
 - Architectures: Wide-Res-Net 28-10, SNGP, Deep Ensemble (5 Ensemble members)
 - Datasets: CiFAR-10, CIFAR-100, SVHN, Tiny-ImageNet
+- Tests: Accuracy, ECE, OoD-detection ('energy', 'softmax', 'DDU', 'KD', 'CWKD', 'VI')
 """
 
 import tensorflow as tf
@@ -138,11 +139,7 @@ if(__name__ == "__main__"):
         
         # load tiny-image-net dataset from huggingface
         ds_ood= datasets.load_dataset('Maysee/tiny-imagenet', split='valid')
-        # ds = datasets.Dataset.from_dict(data)
         ds_ood_tf = ds_ood.with_format("tf")
-        # print("-----Dataset-----")
-        # print(ds_ood_tf[0]['image'])
-        # print("------------")
         oodX = np.zeros((10000, 32, 32, 3), dtype=np.float32)
         oodY = np.zeros((10000,), dtype=np.int32)
         wrongShapeIndices = []

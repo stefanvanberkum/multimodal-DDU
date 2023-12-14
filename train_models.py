@@ -25,19 +25,6 @@ parser.add_argument("--data_augment", default=False, action=argparse.BooleanOpti
 parser.add_argument("--batch_norm_momentum", default=0.99, type=float)
 
 
-# # parameters for training
-# train_model = "resnet"  # 'wrn', 'resnet', 'wrn-ensemble', 'resnet-ensemble' 
-# dataset = "cifar10" # 'cifar10', 'cifar100'
-# train_modBlock = True
-# train_ablate = False
-# n_members = 5
-# batch_size = 128
-# n_epochs = 1
-
-# def augment_data(image_label, seed):
-#     image, label = image_label
-#     new_seed = 
-
 
 if(__name__=="__main__"):
     args = parser.parse_args()
