@@ -1,5 +1,5 @@
 """
-Reproduction of Figure 1 from "Deep Deterministic Uncertainty: A New Simple Baseline", Mukhoti et al. (2023)
+Reproduction of Figure 1 from "Deep Deterministic Uncertainty: A New Simple Baseline",               et al. (2023)
 """
 
 #Import libraries
@@ -599,7 +599,7 @@ if(__name__=="__main__"):
             #Load data
             loaded_data_LeNet = np.load('results/entropies_and_log_gmm_density'+"lenet"+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+".npz")
             loaded_data_VGG16 = np.load('results/entropies_and_log_gmm_density'+"vgg_16"+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+".npz")
-            loaded_data_resnet = np.load('results/new_resnet/entropies_and_log_gmm_density'+"resnet"+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+".npz")
+            loaded_data_resnet = np.load('results/entropies_and_log_gmm_density'+"resnet"+"_"+"SN"+"_"+dataset+"_ablation"+"_n_run_"+str(n_run)+".npz")
 
             for idx, loaded_data in enumerate([loaded_data_LeNet, loaded_data_VGG16, loaded_data_resnet]): 
                 entropy_mnist = loaded_data['array1']
