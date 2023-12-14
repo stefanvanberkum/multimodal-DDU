@@ -39,6 +39,7 @@ parser.add_argument("--temperature_criterion", default='ece', type=str)
 parser.add_argument("--data_augment", default=False, action=argparse.BooleanOptionalAction)
 parser.add_argument("--batch_norm_momentum", default=0.99, type=float)
 parser.add_argument("--dropout", default=0.0, type=float)
+parser.add_argument("--write_results", default = False, action=argparse.BooleanOptionalAction)
 
 
 # load pre-trained models
@@ -61,6 +62,7 @@ if(__name__ == "__main__"):
     data_augment = args.data_augment
     batch_norm_momentum = args.batch_norm_momentum
     dropout = args.dropout
+    write_results = args.write_results
 
 
     if(train_ds == 'cifar10'):
@@ -469,7 +471,25 @@ if(__name__ == "__main__"):
         np.savez('/home/jacobbrandauer/densities_and_entropies/'+test_model+"_"+"SN"+"_"+train_ds+"_vs_"+test_ds+".npz", array1=all_epistemics_in, array2=all_epistemics_out, array3=all_aleatorics_in, array4=all_aleatorics_out)
         print("Results saved to path: /home/jacobbrandauer/densities_and_entropies/"+test_model+"_"+"SN"+"_"+train_ds+"_vs_"+test_ds+".npz")
 
-    
+    if(write_results):
+        fw = open("test_results.txt", 'a')
+        fw.write("--------------------------------\n")
+        fw.write("Model: %s  Train DS: %s  Test DS: %s\n" % (test_model, train_ds, test_ds))
+        if(train_modBlock):
+            modBlockStr = "true"
+        else: 
+            modBlockStr = "false"
+        if(train_ablate):
+            trainAblateStr = "true"
+        else: 
+            trainAblateStr = "false"
+        if(test == "ood"):
+            fw.write("ModBlock: %s  Ablate: %s Test: %s  Uncertainty: %s\n" % (modBlockStr, trainAblateStr, test, uncertainty))
+        else: 
+            fw.write("ModBlock: %s  Ablate: %s Test: %s\n" % (modBlockStr, trainAblateStr, test))
+        fw.write("--------------------------------\n\n\n")
+        
+            
 
     # if(tp_rates): 
     #     print("Mean TP-rate:  %f" %(np.mean(tp_rates)))

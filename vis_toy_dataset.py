@@ -5,7 +5,7 @@ from vis_models import fc_net, fc_resnet, fc_ensemble
 import matplotlib.pyplot as plt
 from scipy.special import softmax
 from scipy.stats import entropy 
-from uncertainty import DDU
+from uncertainty import DDU, DDU_KD, DDU_VI
 from sklearn.manifold import Isomap, TSNE
 from sklearn.decomposition import PCA
 from matplotlib.colors import ListedColormap
@@ -68,7 +68,7 @@ def visualize_predictions(X, y, model,encoder, min=-2.0, max=2.0, res=200, num_n
         features_project = tsne.fit_transform(features_train)
         plt.scatter(features_project[:, 0], features_project[:, 1], c=y)
         plt.show()
-        ddu = DDU(features_train, y)
+        ddu = DDU_VI(features_train, y)
         features_xy = encoder.predict(xy)
         aleatoric, epistemic  = ddu.predict(features_xy,softmax(predictions, axis=1))
         Z2[indices] = epistemic
@@ -125,24 +125,54 @@ def visualize_single_uncertainty(X, y, model,encoder, min=-2.0, max=2.0, res=200
         y_all = np.concatenate([y, y_ood], axis=0)
         print("y_all: ", np.shape(y_all))
 
+        # fig, ax = plt.subplots(1,1)
+
         features_all_projected = pca.fit_transform(features_all)
+        # ax.scatter(features_all_projected[:, 0], features_all_projected[:,1], c=y_all, s=10, alpha =0.3,
+                    # cmap=ListedColormap(['orange', 'blue', 'green', 'red']))
+        # plot density projected into 2D
+        # predictions_all = model.predict(features_all)
+        # _, epistemic_all = ddu.predict(features_all, softmax(predictions_all, axis=1))
+        # log_density_all = -epistemic_all
+        # _, train_epistemic = ddu.predict(features_train, softmax(model.predict(X), axis=1))
+        # log_train_density = -train_epistemic
+        # train_min_density = np.min(log_train_density)
+        # num_features_all = np.shape(features_all_projected)[0]
 
-        plt.scatter(features_all_projected[:, 0], features_all_projected[:,1], c=y_all, s=10, alpha =0.3,
-                    cmap=ListedColormap(['orange', 'blue', 'green', 'red']))
-        # plt.scatter(features_all_projected[:, 0], features_all_projected[:,1], c=y_all, s=10, alpha =0.3,
-        #             cmap=ListedColormap(['orange', 'blue', 'green']))
-        
-        # features_ood_projected = pca.fit_transform(features_ood)
-        # plt.scatter(features_ood_projected[:,0], features_ood_projected[:,1], c='red', s=10, alpha=0.3)
-        aleatoric, epistemic = ddu.predict(features_xy, softmax(predictions, axis=1))
-        log_density = -epistemic
-        
+        x_min_proj = np.min(features_all_projected[:,0])
+        x_max_proj = np.max(features_all_projected[:,0])
+        y_min_proj = np.min(features_all_projected[:,1])
+        y_max_proj = np.max(features_all_projected[:,1])
 
+        xs_proj = np.linspace(x_min_proj, x_max_proj, res)
+        ys_proj = np.linspace(y_min_proj, y_max_proj, res)
+        xy_proj = np.asarray([(_x,_y) for _x in xs_proj for _y in ys_proj])
+        predictions_all = model.predict(xy_proj)
+        features_proj = encoder.predict(xy_proj)
+        _, epistemic_all = ddu.predict(features_proj, softmax(predictions_all, axis=1))
+        log_density_all = -epistemic_all
         _, train_epistemic = ddu.predict(features_train, softmax(model.predict(X), axis=1))
         log_train_density = -train_epistemic
         train_min_density = np.min(log_train_density)
-        Z[indices] = log_density - train_min_density
+        Z_proj = np.zeros((N,M))
+        indices_proj = np.unravel_index(np.arange(num_samples), (N,M))
+        Z_proj[indices_proj] = log_density_all-train_min_density
+        z_min = Z_proj[np.isfinite(Z)].min()
+        z_max = Z_proj[np.isfinite(Z)].max()
+        Z_proj[Z_proj == np.inf] = z_max
+        Z_proj[Z_proj == -np.inf] = z_min
 
+        fig, ax = plt.subplots(1,1)
+        ax.contourf(xs_proj, ys_proj, Z_proj.T,levels=50, linewidths=0.2, cmap='cividis')
+        ax.scatter(features_all_projected[:, 0], features_all_projected[:,1], c=y_all, s=10, alpha =0.3,cmap=ListedColormap(['orange', 'blue', 'green', 'red']))
+        # plt.colorbar()
+        aleatoric, epistemic = ddu.predict(features_xy, softmax(predictions, axis=1))
+        log_density = -epistemic
+        # _, train_epistemic = ddu.predict(features_train, softmax(model.predict(X), axis=1))
+        # log_train_density = -train_epistemic
+        # train_min_density = np.min(log_train_density)
+        Z = np.clip(Z, -1, z_max) / z_max
+        Z[indices] = log_density - train_min_density
         z_min = Z[np.isfinite(Z)].min()
         z_max = Z[np.isfinite(Z)].max()
         Z[Z == np.inf] = z_max
