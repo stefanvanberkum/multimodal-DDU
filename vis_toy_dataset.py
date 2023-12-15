@@ -1,6 +1,6 @@
 """ Simple visualizations on 2D toy datasets
     Dataset-generation is taken from code on the practical about Uncertainty Estimation
-
+    which can be found at https://gits-15.sys.kth.se/dd2412-deep-learning-advanced/Simple-and-Effective-Methods-for-Uncertainty-Estimation 
 """
 import tensorflow as tf
 import numpy as np
@@ -27,7 +27,7 @@ def ood_data(num_samples = 200):
 def generate_datasets(N,K,noise):
     """
     Function for creating datasets, taken from practical and modified for our purposes
-    
+
     """
     X = np.zeros((N*K,D)) # data matrix (each row = single example)
     y = np.zeros(N*K, dtype='uint8') # class labels
