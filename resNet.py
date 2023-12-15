@@ -12,7 +12,7 @@ from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.regularizers import l2
 from scipy.stats import entropy
 from scipy.special import softmax, logsumexp
-
+from spectral_normalization import spectral_normalization
 
 def resnet_uncertainty(y, mode='softmax'):
     """Calculates simple uncertainty measures for single (deterministic) resnet
@@ -35,7 +35,7 @@ def resnet_uncertainty(y, mode='softmax'):
     
     return aleatoric, epistemic
 
-def resnet(stages, N, in_filters, in_shape, n_out, dropout=0, weight_decay=1e-4, modBlock=True, use_bottleneck=False, ablate=False):
+def resnet(stages, N, in_filters, in_shape, n_out, dropout=0, weight_decay=1e-4, modBlock=True, use_bottleneck=False, ablate=False, coeff=3.0):
     """ResNet as described by He et al. (2015) with changes described by Mukhoti et al. (2023)
 
     :param stages: list of number of filters
@@ -56,8 +56,11 @@ def resnet(stages, N, in_filters, in_shape, n_out, dropout=0, weight_decay=1e-4,
 
     # First convolution
     if(modBlock):
-        x = SpectralNormalization(Conv2D(in_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
-               kernel_regularizer=l2(weight_decay)))(inputs)
+        x = spectral_normalization(Conv2D(in_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
+               kernel_regularizer=l2(weight_decay)), coeff=3.0)(inputs)
+        #
+        # conv = Conv2D(in_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal', kernel_regularizer=l2(weight_decay))
+       #x = wrapped_conv_layer(conv, input_size=in_shape,in_c = 3,coeff=3.0)
     else: 
         x = Conv2D(in_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
                kernel_regularizer=l2(weight_decay))(inputs)
@@ -101,7 +104,7 @@ def resnet(stages, N, in_filters, in_shape, n_out, dropout=0, weight_decay=1e-4,
 
 
 
-def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True, ablate=False):
+def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True, ablate=False, coeff=3.0):
     """Basic ResNet block.
 
     :param x: Input.
@@ -125,8 +128,8 @@ def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True
     x = BatchNormalization()(x)
     x = activation(x)
     if(modBlock):
-        x = SpectralNormalization(Conv2D(n_filters, 3, start_stride, padding='same', use_bias=False, kernel_initializer='he_normal',
-               kernel_regularizer=l2(weight_decay)))(x)
+        x = spectral_normalization(Conv2D(n_filters, 3, start_stride, padding='same', use_bias=False, kernel_initializer='he_normal',
+               kernel_regularizer=l2(weight_decay)), coeff=coeff)(x)
     else: 
         x = Conv2D(n_filters, 3, start_stride, padding='same', use_bias=False, kernel_initializer='he_normal',
                kernel_regularizer=l2(weight_decay))(x)
@@ -137,14 +140,11 @@ def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True
         x = Dropout(dropout)(x)
     
     if(modBlock):
-        x = SpectralNormalization(Conv2D(n_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
-               kernel_regularizer=l2(weight_decay)))(x)
+        x = spectral_normalization(Conv2D(n_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
+               kernel_regularizer=l2(weight_decay)), coeff=3.0)(x)
     else:
         x = Conv2D(n_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
                kernel_regularizer=l2(weight_decay))(x)
-    
-    # print("Shape x: ", tf.shape(x))
-    # print("N filters: ", n_filters)
     
 
     if downsample:
@@ -160,7 +160,7 @@ def block(x, n_filters, dropout, weight_decay, downsample=False, modBlock = True
             # if(n_filters > x_skip.shape[-1]):
             #     zero_entries = tf.zeros(shape=[x_skip.shape[0], x_skip.shape[1], x_skip.shape[2], n_filters-x_skip.shape[3]])
 
-            #     # concatenate in dimension of channels
+            #     # concatenate in dimension of  channels
             #     x_skip = tf.concat([x_skip, zero_entries], axis=-1)
 
             if(x_skip.shape[1] % 2 == 0):
@@ -211,7 +211,7 @@ def bottleneck_block(x, n_filters, dropout, weight_decay, downsample=False, modB
     x = BatchNormalization()(x)
     x = activation(x)
     if(modBlock):
-        x = SpectralNormalization(Conv2D(n_filters, 1, start_stride, padding='same', use_bias=False, kernel_initializer='he_normal',
+        x = spectral_normalization(Conv2D(n_filters, 1, start_stride, padding='same', use_bias=False, kernel_initializer='he_normal',
                kernel_regularizer=l2(weight_decay)))(x)
     else: 
         x = Conv2D(n_filters, 1, start_stride, padding='same', use_bias=False, kernel_initializer='he_normal',
@@ -222,7 +222,7 @@ def bottleneck_block(x, n_filters, dropout, weight_decay, downsample=False, modB
     x = activation(x)
 
     if(modBlock):
-        x = SpectralNormalization(Conv2D(n_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
+        x = spectral_normalization(Conv2D(n_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
                kernel_regularizer=l2(weight_decay)))(x)
     else: 
         x = Conv2D(n_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
@@ -234,7 +234,7 @@ def bottleneck_block(x, n_filters, dropout, weight_decay, downsample=False, modB
         x = Dropout(dropout)(x)
     
     if(modBlock):
-        x = SpectralNormalization(Conv2D(n_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
+        x = spectral_normalization(Conv2D(n_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
                kernel_regularizer=l2(weight_decay)))(x)
     else:
         x = Conv2D(n_filters, 3, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
@@ -245,7 +245,7 @@ def bottleneck_block(x, n_filters, dropout, weight_decay, downsample=False, modB
     x = activation(x)
 
     if(modBlock):
-        x = SpectralNormalization(Conv2D(4*n_filters, 1, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
+        x = spectral_normalization(Conv2D(4*n_filters, 1, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
                kernel_regularizer=l2(weight_decay)))(x)
     else:
         x = Conv2D(4*n_filters, 1, 1, padding='same', use_bias=False, kernel_initializer='he_normal',
