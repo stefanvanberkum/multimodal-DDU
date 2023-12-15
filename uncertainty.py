@@ -148,7 +148,8 @@ class DDU_VI:
         :param scaling_parameter: The weight concentration prior.
         """
 
-        self.gmm = BayesianGaussianMixture(n_components=n_components, weight_concentration_prior=scaling_parameter).fit(z)
+        # self.gmm = BayesianGaussianMixture(n_components=n_components, weight_concentration_prior=scaling_parameter).fit(z)
+        self.gmm = BayesianGaussianMixture(n_components=n_components, covariance_type='spherical', max_iter=300, n_init=10, weight_concentration_prior=scaling_parameter, verbose=1).fit(z)
 
     def predict(self, z, p):
         """Predict uncertainty for one sample.
