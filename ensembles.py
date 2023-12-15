@@ -71,7 +71,7 @@ def ensemble_uncertainty(y, mode = 'entropy'):
         # average probs over ensemble members
         avg_probs = np.mean(probs, axis=0)
         aleatoric = entropy(avg_probs, axis=1)
-        epistemic = aleatoric - np.mean(entropy(y, axis=-1), axis=0)
+        epistemic = aleatoric - np.mean(entropy(probs, axis=-1), axis=0)
     else: 
         aleatoric = 0
         epistemic = 0
